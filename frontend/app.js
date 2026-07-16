@@ -1,17 +1,68 @@
 const API = window.API_BASE || '/api';
-const LV = { '初级': {c:'lv1',t:'初级'}, '中级': {c:'lv2',t:'中级'}, '高阶': {c:'lv3',t:'高阶'}, '总览': {c:'gen',t:'总览'} };
+const LV = {
+  '初级': {c:'lv1', t:'初级', en:'Beginner'},
+  '中级': {c:'lv2', t:'中级', en:'Intermediate'},
+  '高阶': {c:'lv3', t:'高阶', en:'Advanced'},
+  '总览': {c:'gen', t:'总览', en:'Overview'},
+};
+const I18N = {
+  zh: {
+    brand_sub:'肉类食品加工数字化 · 产品与技术培训平台',
+    search_ph:'搜索教材、资源、关键词…',
+    tab_materials:'内部教材', tab_resources:'外链资源库',
+    drawer_title:'奥楷培训学习中心',
+    level_label:'级别', all:'全部', lv1:'初级', lv2:'中级', lv3:'高阶', lv0:'总览',
+    res_audience:'适用人群', res_type:'资源类型',
+    cat_presale:'售前', cat_sales:'销售', cat_service:'售后', cat_general:'通用',
+    note_label:'教材备注：',
+    home_title:'欢迎来到奥楷培训学习中心',
+    home_intro:'肉类食品加工数字化设备（灌装/扎线/扭结、包装、码垛）产品与技术培训平台。所有外部链接内容已下载归档，可离线学习。',
+    home_res_desc:'从全网收集的 33 篇产品与技术培训资料，已下载正文',
+    prev:'← 上一篇', next:'下一篇 →',
+    placeholder_res:'从左侧选择资源查看详情',
+    loading:'加载中…', notfound:'未找到该教材', notfound_res:'未找到该资源',
+    search_empty:'无匹配结果',
+  },
+  en: {
+    brand_sub:'Meat-Processing Digitalization · Product & Tech Training Platform',
+    search_ph:'Search materials, resources, keywords…',
+    tab_materials:'Materials', tab_resources:'Resource Library',
+    drawer_title:'Aokai Training Center',
+    level_label:'Level', all:'All', lv1:'Beginner', lv2:'Intermediate', lv3:'Advanced', lv0:'Overview',
+    res_audience:'Audience', res_type:'Type',
+    cat_presale:'Pre-sales', cat_sales:'Sales', cat_service:'Service', cat_general:'General',
+    note_label:'Note: ',
+    home_title:'Welcome to Aokai Training Center',
+    home_intro:'A training platform for meat-processing digitalization equipment (filling / linking / twisting, packaging, palletizing) — products & technology. All external links are downloaded and archived for offline learning.',
+    home_res_desc:'33 product & technology training resources collected from the web, with full text downloaded',
+    prev:'← Prev', next:'Next →',
+    placeholder_res:'Select a resource from the left',
+    loading:'Loading…', notfound:'Material not found', notfound_res:'Resource not found',
+    search_empty:'No matches',
+  }
+};
 
-let STATE = { tab:'materials', level:'', cat:'', plat:'', materials:[], cats:[] };
+let STATE = { tab:'materials', level:'', cat:'', plat:'', materials:[], cats:[], lang:'zh' };
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
 
-async function get(path){ const r = await fetch(API+path); if(!r.ok) throw new Error(path+' '+r.status); return r.json(); }
+function t(key){ return (I18N[STATE.lang] && I18N[STATE.lang][key]!=null) ? I18N[STATE.lang][key] : (I18N.zh[key]||key); }
+function lvLabel(lv){ const o = LV[lv] || {c:'gen', t:lv, en:lv}; return STATE.lang==='en' ? o.en : o.t; }
+function withLang(path){
+  if(path.indexOf('lang=') !== -1) return path;
+  const sep = path.indexOf('?') !== -1 ? '&' : '?';
+  return path + sep + 'lang=' + STATE.lang;
+}
+async function get(path){ const r = await fetch(API + withLang(path)); if(!r.ok) throw new Error(path+' '+r.status); return r.json(); }
 
 /* ---------- 初始化 ---------- */
 async function init(){
-  try { STATE.cats = await get('/categories'); } catch(e){ STATE.cats=[]; }
+  try { STATE.lang = localStorage.getItem('aokai_lang') || 'zh'; } catch(e){ STATE.lang='zh'; }
+  const lb = $('#langBtn'); if(lb) lb.textContent = STATE.lang==='en' ? '中' : 'EN';
   bindEvents();
+  try { STATE.cats = await get('/categories'); } catch(e){ STATE.cats=[]; }
+  applyI18n();
   await route();
   window.addEventListener('hashchange', route);
 }
@@ -22,6 +73,7 @@ function bindEvents(){
   $('#menuBtn').onclick = () => { syncStabs(STATE.tab); $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('hidden'); };
   $('#overlay').onclick = () => closeDrawer();
   $('#drawerClose').onclick = () => closeDrawer();
+  $('#langBtn').onclick = () => setLang(STATE.lang==='zh' ? 'en' : 'zh');
   document.querySelectorAll('.stab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
   // 级别筛选
@@ -62,6 +114,19 @@ function closeDrawer(){
   $('#sidebar').classList.remove('open');
   $('#overlay').classList.add('hidden');
 }
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(e=>{ const k=e.getAttribute('data-i18n'); if(I18N[STATE.lang] && I18N[STATE.lang][k]!=null) e.textContent = I18N[STATE.lang][k]; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(e=>{ const k=e.getAttribute('data-i18n-ph'); if(I18N[STATE.lang] && I18N[STATE.lang][k]!=null) e.setAttribute('placeholder', I18N[STATE.lang][k]); });
+  document.title = (I18N[STATE.lang] && I18N[STATE.lang].drawer_title) || 'Aokai Training Center';
+  document.documentElement.lang = STATE.lang==='en' ? 'en' : 'zh-CN';
+}
+function setLang(lang){
+  STATE.lang = lang;
+  try { localStorage.setItem('aokai_lang', lang); } catch(e){}
+  const b = $('#langBtn'); if(b) b.textContent = lang==='en' ? '中' : 'EN';
+  applyI18n();
+  get('/categories').then(cats=>{ STATE.cats = cats; return route(); }).catch(()=> route());
+}
 
 /* ---------- 教材侧栏 ---------- */
 async function loadMaterials(){
@@ -78,7 +143,7 @@ function renderCatList(){
     const body = el('div','cat-body');
     items.forEach(m=>{
       const lv = LV[m.level]||{c:'gen',t:m.level};
-      const a = el('a', '', `${m.title}<span class="badge ${lv.c}">${lv.t}</span>`);
+      const a = el('a', '', `${m.title}<span class="badge ${lv.c}">${lvLabel(m.level)}</span>`);
       a.href = '#/material/'+m.slug;
       a.dataset.slug = m.slug;
       a.onclick = () => closeDrawer();
@@ -113,7 +178,7 @@ async function loadResources(){
       <div class="rmeta">
         <span class="pf">${esc(r.platform)}</span>
         <span>${esc(r.category)}</span>
-        ${(r.levels||[]).map(l=>`<span class="badge ${LV[l]?LV[l].c:'gen'}">${l}</span>`).join('')}
+        ${(r.levels||[]).map(l=>`<span class="badge ${LV[l]?LV[l].c:'gen'}">${lvLabel(l)}</span>`).join('')}
         ${r.word_count?`<span>${r.word_count} 字</span>`:''}
         ${fail?`<span class="st-fail">仅链接</span>`:''}
       </div>`;
@@ -138,12 +203,12 @@ async function showMaterial(slug){
   const m = await get('/materials/'+slug);
   const lv = LV[m.level]||{c:'gen',t:m.level};
   $('#content').innerHTML = `
-    <div class="doc-head"><h1>${esc(m.title)}</h1><span class="badge ${lv.c}">${lv.t}</span></div>
-    <div class="doc-meta">${esc(m.group_name)} · 内部教材</div>
+    <div class="doc-head"><h1>${esc(m.title)}</h1><span class="badge ${lv.c}">${lvLabel(m.level)}</span></div>
+    <div class="doc-meta">${esc(m.group_name)} · ${t('tab_materials')}</div>
     <div class="doc-body">${m.html}</div>
     <div class="pager">
-      <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">← 上一篇</a>
-      <a class="${m.next?'':'disabled'}" href="${m.next?'#/material/'+m.next:''}">下一篇 →</a>
+      <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">${m.prev?t('prev'):''}</a>
+      <a class="${m.next?'':'disabled'}" href="${m.next?'#/material/'+m.next:''}">${m.next?t('next'):''}</a>
     </div>`;
   // 表格横向滚动容器（移动端友好）
   $('#content').querySelectorAll('.doc-body table').forEach(t=>{
@@ -155,14 +220,16 @@ async function showResource(id){
   const r = await get('/resources/'+id);
   const fail = r.status && r.status!=='ok';
   const bodyHtml = fail
-    ? `<div class="body">该外部资源暂未成功抓取正文，请通过下方按钮访问原页面查看完整内容。\n\n备注：${esc(r.note||'')}</div>`
-    : `<div class="body">${esc(r.body||'（无正文）')}</div>`;
+    ? `<div class="body">${STATE.lang==='en'
+        ? 'The full text of this external resource was not captured. Please visit the original page via the button below.'
+        : '该外部资源暂未成功抓取正文，请通过下方按钮访问原页面查看完整内容。'}\n\n${t('note_label')}${esc(r.note||'')}</div>`
+    : `<div class="body">${esc(r.body|| (STATE.lang==='en'?'（No content）':'（无正文）'))}</div>`;
   $('#content').innerHTML = `
     <div class="res-detail">
       <h1>${esc(r.title||r.domain)}</h1>
-      <div class="meta">来源：${esc(r.domain)} · 类型：${esc(r.platform)} · 适用：${esc(r.category)}
-        ${(r.levels||[]).map(l=>'· '+l).join('')} · 字数：${r.word_count||0}</div>
-      ${r.note?`<div class="note"><strong>教材备注：</strong>${esc(r.note)}</div>`:''}
+      <div class="meta">${STATE.lang==='en'?'Source':'来源'}：${esc(r.domain)} · ${STATE.lang==='en'?'Type':'类型'}：${esc(r.platform)} · ${STATE.lang==='en'?'For':'适用'}：${esc(r.category)}
+        ${(r.levels||[]).map(l=>'· '+lvLabel(l)).join('')} · ${STATE.lang==='en'?'Words':'字数'}：${r.word_count||0}</div>
+      ${r.note?`<div class="note"><strong>${t('note_label')}</strong>${esc(r.note)}</div>`:''}
       ${bodyHtml}
       <a class="ext-link" href="${esc(r.url)}" target="_blank" rel="noopener">访问原页面 ↗</a>
     </div>`;
@@ -170,18 +237,13 @@ async function showResource(id){
   $('#resList').querySelectorAll('.res-item').forEach((it,i)=>{});
 }
 function showHome(){
-  const cards = [
-    {ic:'📘', t:'内部教材', d:'售前 / 销售 / 售后三类人群，初级到高阶系统化讲义', go:'#/material/README'},
-    {ic:'🔗', t:'外链资源库', d:'从全网收集的 33 篇产品与技术培训资料，已下载正文', go:'#/resources'},
-  ];
-  // 加上三类人群入口
   const groups = STATE.cats;
-  let html = `<h1 style="color:var(--blue);margin-top:0">欢迎来到奥楷培训学习中心</h1>
-    <p style="color:var(--muted)">肉类食品加工数字化设备（灌装/扎线/扭结、包装、码垛）产品与技术培训平台。所有外部链接内容已下载归档，可离线学习。</p>
+  let html = `<h1 style="color:var(--blue);margin-top:0">${t('home_title')}</h1>
+    <p style="color:var(--muted)">${t('home_intro')}</p>
     <div class="home-cards">`;
   groups.forEach(c=>{ html += `<div class="home-card" data-go="#/material/${c.key==='general'?'README':firstSlugOf(c.key)}">
-      <div class="ic">🎯</div><h3>${esc(c.name)}</h3><p>${esc(c.blurb)} · ${c.material_count} 篇</p></div>`; });
-  html += `<div class="home-card" data-go="#/resources"><div class="ic">🔗</div><h3>外链资源库</h3><p>33 条全网培训资源（含已下载正文）</p></div>`;
+      <div class="ic">🎯</div><h3>${esc(c.name)}</h3><p>${esc(c.blurb)} · ${c.material_count} ${STATE.lang==='en'?'items':'篇'}</p></div>`; });
+  html += `<div class="home-card" data-go="#/resources"><div class="ic">🔗</div><h3>${t('tab_resources')}</h3><p>${t('home_res_desc')}</p></div>`;
   html += `</div>`;
   $('#content').innerHTML = html;
   $('#content').querySelectorAll('.home-card').forEach(card=> card.onclick=()=> location.hash=card.dataset.go);
@@ -199,7 +261,7 @@ async function doSearch(){
   try{
     const r = await get('/search?q='+encodeURIComponent(q));
     box.innerHTML='';
-    if(!r.materials.length && !r.resources.length){ box.appendChild(el('div','empty','无匹配结果')); }
+    if(!r.materials.length && !r.resources.length){ box.appendChild(el('div','empty', t('search_empty'))); }
     r.materials.forEach(m=>{ const a=el('a', '', `<span class="sr-kind">教材</span>${esc(m.title)} <small>(${m.group_name}·${m.level})</small>`); a.href='#/material/'+m.slug; box.appendChild(a); });
     r.resources.forEach(res=>{ const a=el('a', '', `<span class="sr-kind res">资源</span>${esc(res.title)} <small>(${esc(res.platform)})</small>`); a.href='#/resource/'+res.id; box.appendChild(a); });
     box.classList.remove('hidden');
@@ -210,11 +272,11 @@ async function doSearch(){
 async function route(){
   const h = location.hash || '#/home';
   if(h==='#/home'){ await ensureMaterials(); showHome(); return; }
-  if(h==='#/resources'){ switchTab('resources'); await loadResources(); $('#content').innerHTML='<div class="placeholder">从左侧选择资源查看详情</div>'; return; }
+  if(h==='#/resources'){ switchTab('resources'); await loadResources(); $('#content').innerHTML='<div class="placeholder">'+t('placeholder_res')+'</div>'; return; }
   let m = h.match(/#\/material\/(.+)/);
-  if(m){ await ensureMaterials(); if(STATE.tab!=='materials') switchTab('materials'); try{ await showMaterial(m[1]); }catch(e){ $('#content').innerHTML='<div class="placeholder">未找到该教材</div>'; } return; }
+  if(m){ await ensureMaterials(); if(STATE.tab!=='materials') switchTab('materials'); try{ await showMaterial(m[1]); }catch(e){ $('#content').innerHTML='<div class="placeholder">'+t('notfound')+'</div>'; } return; }
   let r = h.match(/#\/resource\/(.+)/);
-  if(r){ switchTab('resources'); try{ await showResource(r[1]); }catch(e){ $('#content').innerHTML='<div class="placeholder">未找到该资源</div>'; } return; }
+  if(r){ switchTab('resources'); try{ await showResource(r[1]); }catch(e){ $('#content').innerHTML='<div class="placeholder">'+t('notfound_res')+'</div>'; } return; }
   showHome();
 }
 async function ensureMaterials(){ if(!STATE.materials.length) await loadMaterials(); }

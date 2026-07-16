@@ -30,21 +30,27 @@ def health():
 
 
 @app.get('/api/categories')
-def categories():
+def categories(lang: str = 'zh'):
     conn = db()
     cats = [row_to_dict(x) for x in conn.execute('SELECT * FROM categories ORDER BY sort').fetchall()]
     for c in cats:
         c['material_count'] = conn.execute(
-            'SELECT COUNT(*) FROM materials WHERE group_key=?', (c['key'],)).fetchone()[0]
+            'SELECT COUNT(*) FROM materials WHERE group_key=? AND lang=?', (c['key'], lang)).fetchone()[0]
+        if lang == 'en':
+            c['name'] = c.pop('name_en', c['name'])
+            c['blurb'] = c.pop('blurb_en', c['blurb'])
+        else:
+            c.pop('name_en', None)
+            c.pop('blurb_en', None)
     conn.close()
     return cats
 
 
 @app.get('/api/materials')
-def materials(group: str = None, level: str = None, q: str = None):
+def materials(group: str = None, level: str = None, q: str = None, lang: str = 'zh'):
     conn = db()
-    sql = 'SELECT slug,group_key,group_name,level,title,sort FROM materials WHERE 1=1'
-    args = []
+    sql = 'SELECT slug,group_key,group_name,level,title,sort FROM materials WHERE lang=?'
+    args = [lang]
     if group:
         sql += ' AND group_key=?'; args.append(group)
     if level:
@@ -58,15 +64,15 @@ def materials(group: str = None, level: str = None, q: str = None):
 
 
 @app.get('/api/materials/{slug}')
-def material(slug: str):
+def material(slug: str, lang: str = 'zh'):
     conn = db()
-    r = conn.execute('SELECT * FROM materials WHERE slug=?', (slug,)).fetchone()
+    r = conn.execute('SELECT * FROM materials WHERE slug=? AND lang=?', (slug, lang)).fetchone()
     if not r:
         raise HTTPException(404, 'not found')
     d = row_to_dict(r)
-    # 上一篇/下一篇（同排序序列）
+    # 上一篇/下一篇（同语言、同排序序列）
     all_slugs = [x['slug'] for x in conn.execute(
-        'SELECT slug FROM materials ORDER BY sort').fetchall()]
+        'SELECT slug FROM materials WHERE lang=? ORDER BY sort', (lang,)).fetchall()]
     if slug in all_slugs:
         i = all_slugs.index(slug)
         d['prev'] = all_slugs[i - 1] if i > 0 else None
@@ -113,12 +119,12 @@ def resource(rid: str):
 
 
 @app.get('/api/search')
-def search(q: str = Query(..., min_length=1)):
+def search(q: str = Query(..., min_length=1), lang: str = 'zh'):
     conn = db()
     mats = [row_to_dict(x) for x in conn.execute(
         'SELECT slug,group_name,level,title,"material" AS kind FROM materials '
-        'WHERE title LIKE ? OR text LIKE ? ORDER BY sort LIMIT 30',
-        (f'%{q}%', f'%{q}%'))]
+        'WHERE lang=? AND (title LIKE ? OR text LIKE ?) ORDER BY sort LIMIT 30',
+        (lang, f'%{q}%', f'%{q}%'))]
     res = [row_to_dict(x) for x in conn.execute(
         'SELECT id,title,category,platform,"resource" AS kind FROM resources '
         'WHERE title LIKE ? OR body LIKE ? OR note LIKE ? ORDER BY word_count DESC LIMIT 30',
