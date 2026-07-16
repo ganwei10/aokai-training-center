@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>奥楷培训学习中心</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" onclick="location.hash='#/home'">
+      <span class="logo">奥楷</span>
+      <div class="brand-txt">
+        <strong>奥楷培训学习中心</strong>
+        <small>肉类食品加工数字化 · 产品与技术培训平台</small>
+      </div>
+    </div>
+    <div class="search">
+      <input id="searchInput" type="search" placeholder="搜索教材、资源、关键词…" autocomplete="off" />
+      <div id="searchResults" class="search-results hidden"></div>
+    </div>
+    <nav class="tabs">
+      <button id="tabMaterials" class="tab active" data-tab="materials">内部教材</button>
+      <button id="tabResources" class="tab" data-tab="resources">外链资源库</button>
+    </nav>
+    <button id="menuBtn" class="menu-btn" aria-label="菜单">☰</button>
+  </header>
+
+  <div class="layout">
+    <aside id="sidebar" class="sidebar">
+      <div id="sideMaterials" class="side-panel">
+        <div class="level-filter" id="levelFilter">
+          <span class="lf-label">级别</span>
+          <button class="chip active" data-level="">全部</button>
+          <button class="chip" data-level="初级">初级</button>
+          <button class="chip" data-level="中级">中级</button>
+          <button class="chip" data-level="高阶">高阶</button>
+        </div>
+        <div id="catList" class="cat-list"></div>
+      </div>
+      <div id="sideResources" class="side-panel hidden">
+        <div class="filter-group" id="resCatFilter">
+          <div class="fg-title">适用人群</div>
+          <button class="chip active" data-cat="">全部</button>
+          <button class="chip" data-cat="售前工程师">售前</button>
+          <button class="chip" data-cat="销售">销售</button>
+          <button class="chip" data-cat="售后工程师">售后</button>
+          <button class="chip" data-cat="通用">通用</button>
+        </div>
+        <div class="filter-group" id="resPlatFilter">
+          <div class="fg-title">资源类型</div>
+          <button class="chip active" data-plat="">全部</button>
+        </div>
+        <div id="resList" class="res-list"></div>
+      </div>
+    </aside>
+
+    <main id="content" class="content">
+      <div class="placeholder">加载中…</div>
+    </main>
+  </div>
+
+  <div id="overlay" class="overlay hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

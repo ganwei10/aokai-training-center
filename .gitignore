@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Vercel / Node
+.vercel/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local temp
+*.db-journal
+/tmp/

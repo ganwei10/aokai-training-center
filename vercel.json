@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "outputDirectory": "frontend",
+  "functions": {
+    "api/index.py": { "runtime": "python3.12", "maxDuration": 30 }
+  }
+}

@@ -1,0 +1,6 @@
+# Vercel 部署所需依赖（serverless 函数运行时）
+fastapi==0.139.0
+uvicorn==0.51.0
+python-multipart==0.0.32
+markdown==3.7
+mangum==0.17.0
