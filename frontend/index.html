@@ -23,6 +23,7 @@
     <nav class="tabs">
       <button id="tabMaterials" class="tab active" data-tab="materials" data-i18n="tab_materials">内部教材</button>
       <button id="tabResources" class="tab" data-tab="resources" data-i18n="tab_resources">外链资源库</button>
+      <button id="tabCompany" class="tab" data-tab="company" data-i18n="tab_company">公司资料</button>
     </nav>
     <button id="langBtn" class="lang-btn" aria-label="切换语言">EN</button>
     <button id="menuBtn" class="menu-btn" aria-label="菜单">☰</button>
@@ -37,6 +38,7 @@
       <div class="side-tabs">
         <button class="stab active" data-tab="materials" data-i18n="tab_materials">内部教材</button>
         <button class="stab" data-tab="resources" data-i18n="tab_resources">外链资源库</button>
+        <button class="stab" data-tab="company" data-i18n="tab_company">公司资料</button>
       </div>
       <div id="sideMaterials" class="side-panel">
         <div class="level-filter" id="levelFilter">
@@ -69,6 +71,16 @@
           <button class="chip active" data-plat="" data-i18n="all">全部</button>
         </div>
         <div id="resList" class="res-list"></div>
+      </div>
+      <div id="sideCompany" class="side-panel hidden">
+        <div class="filter-group">
+          <div class="fg-title" data-i18n="comp_docs">公司文档</div>
+          <div id="compDocList" class="res-list"></div>
+        </div>
+        <div class="filter-group">
+          <div class="fg-title" data-i18n="comp_std">相关国家标准</div>
+          <div id="compStdList" class="res-list"></div>
+        </div>
       </div>
     </aside>
 

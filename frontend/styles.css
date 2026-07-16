@@ -117,6 +117,35 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,s
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:50}
 .hidden{display:none!important}
 
+/* ============ 阅读友好增强 ============ */
+.doc-body p{margin:.85em 0}
+.doc-body{max-width:860px}
+.res-detail{max-width:860px;margin:0 auto}
+
+/* 公司资料页 */
+.company-page{margin-bottom:8px}
+.sec{color:var(--blue);border-left:4px solid var(--cyan);padding-left:10px;margin:28px 0 14px;font-size:20px}
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.file-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.fc-title{font-weight:600;font-size:14.5px}
+.fc-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ext-link.sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.ext-link.ghost{background:#eef1f6;color:var(--blue)}
+.ext-link.ghost:hover{background:#e2e8f2}
+.std-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.std-card{display:block;text-decoration:none;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;transition:.15s}
+.std-card:hover{box-shadow:0 8px 22px rgba(15,44,82,.12);border-color:var(--cyan);transform:translateY(-2px)}
+.sc-code{font-weight:800;color:var(--blue);font-size:15px;margin-bottom:6px}
+.sc-title{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* 国标正文阅读友好 */
+.std-body h2{font-size:19px}
+.std-body h3{font-size:16px}
+.std-body table{font-size:13.5px}
+
+/* 搜索结果：标准标签 */
+.search-results .sr-kind.std{background:var(--ok)}
+
 /* 长文本/长链接自动换行，避免移动端横向溢出 */
 .doc-body,.res-detail .body{overflow-wrap:break-word;word-break:break-word}
 /* 表格在窄屏横向滚动 */

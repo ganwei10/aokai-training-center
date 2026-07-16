@@ -82,15 +82,17 @@ def material(slug: str, lang: str = 'zh'):
 
 
 @app.get('/api/resources')
-def resources(category: str = None, platform: str = None, status: str = None, level: str = None, q: str = None):
+def resources(category: str = None, platform: str = None, type: str = None, status: str = None, level: str = None, q: str = None):
     conn = db()
-    sql = ('SELECT id,url,domain,platform,category,categories_json,levels_json,note,title,'
+    sql = ('SELECT id,url,domain,platform,type,category,categories_json,levels_json,note,title,'
            'word_count,status,video_url FROM resources WHERE 1=1')
     args = []
     if category:
         sql += ' AND category=?'; args.append(category)
     if platform:
         sql += ' AND platform=?'; args.append(platform)
+    if type:
+        sql += ' AND type=?'; args.append(type)
     if status:
         sql += ' AND status=?'; args.append(status)
     if level:
@@ -120,6 +122,43 @@ def resource(rid: str):
     return d
 
 
+@app.get('/api/standards')
+def standards():
+    conn = db()
+    rows = [row_to_dict(x) for x in conn.execute(
+        'SELECT id,code,title FROM standards ORDER BY sort').fetchall()]
+    conn.close()
+    return rows
+
+
+@app.get('/api/standards/{code}')
+def standard(code: str):
+    conn = db()
+    r = conn.execute('SELECT * FROM standards WHERE id=?', (code,)).fetchone()
+    if not r:
+        raise HTTPException(404, 'not found')
+    d = row_to_dict(r)
+    all_ids = [x['id'] for x in conn.execute('SELECT id FROM standards ORDER BY sort').fetchall()]
+    if code in all_ids:
+        i = all_ids.index(code)
+        d['prev'] = all_ids[i - 1] if i > 0 else None
+        d['next'] = all_ids[i + 1] if i < len(all_ids) - 1 else None
+    conn.close()
+    return d
+
+
+@app.get('/api/company')
+def company():
+    conn = db()
+    docs = [row_to_dict(x) for x in conn.execute(
+        'SELECT kind,slug,title,asset,desc FROM company ORDER BY sort').fetchall()]
+    intro = conn.execute("SELECT html FROM company WHERE kind='intro'").fetchone()
+    stds = [row_to_dict(x) for x in conn.execute(
+        'SELECT id,code,title FROM standards ORDER BY sort').fetchall()]
+    conn.close()
+    return {'intro_html': intro['html'] if intro else '', 'docs': docs, 'standards': stds}
+
+
 @app.get('/api/search')
 def search(q: str = Query(..., min_length=1), lang: str = 'zh'):
     conn = db()
@@ -131,8 +170,12 @@ def search(q: str = Query(..., min_length=1), lang: str = 'zh'):
         'SELECT id,title,category,platform,"resource" AS kind FROM resources '
         'WHERE title LIKE ? OR body LIKE ? OR note LIKE ? ORDER BY word_count DESC LIMIT 30',
         (f'%{q}%', f'%{q}%', f'%{q}%'))]
+    stds = [row_to_dict(x) for x in conn.execute(
+        'SELECT id,code,title,"standard" AS kind FROM standards '
+        'WHERE code LIKE ? OR title LIKE ? OR text LIKE ? ORDER BY sort LIMIT 20',
+        (f'%{q}%', f'%{q}%', f'%{q}%'))]
     conn.close()
-    return {'materials': mats, 'resources': res}
+    return {'materials': mats, 'resources': res, 'standards': stds}
 
 
 # 前端静态资源（本地运行时由后端一并托管；在 Vercel 等平台设为 0，由平台托管静态文件）
