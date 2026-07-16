@@ -71,6 +71,163 @@ def esc_attr(s):
              .replace('<', '&lt;').replace('>', '&gt;'))
 
 
+# ---------- 外链文章正文去噪：只保留有意义的文字 ----------
+_NAV_WORDS = {
+    '首页','资讯','产品','求购','品牌','技术','标准','展会','联盟','关于我们','联系我们',
+    '加入我们','资料下载','视频列表','行业资讯','技术文章','解决方案','产品中心','服务策略',
+    '维修网络','网上报修','企业风采','市场分析','产业播报','管理市场','产业建设','信息快车',
+    '行业访谈','专家专栏','业界动态','技术应用','标准动态','人才招聘','招商加盟','联系厂商',
+    '新闻中心','帮助中心','服务中心','下载中心','会员中心','个人中心','登录','注册','搜索',
+    '设备天地','电子期刊','正文','招聘',
+}
+_MENU_RE = re.compile(r'( - ){2,}|( \| ){2,}|(»){2,}')
+_SEP_RE = re.compile(r'^[\s»>\-—|·／/．。、，,]*$')          # 仅含分隔符的空行
+_CRUMB_FRAG_RE = re.compile(r'^»\s*.{1,6}$')                # 面包屑残片：» 电子期刊
+_PHONE_RE = re.compile(r'1[3-9]\d{9}|400[-]?\d{3,4}[-]?\d{3,4}|\d{3,4}-\d{7,8}')
+_EMAIL_RE = re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+')
+_AD_RE = re.compile(
+    r'报名|咨询热线|免费领取|限时|招商|加微信|点击咨询|客服(电话|热线)?|微信号|立即(咨询|报名)|'
+    r'抢购|特价|优惠(活动|券)?|联系电话|服务热线|联系方式|手机[:：]|招商(加盟|代理)?|'
+    r'扫码|二维码|关注(我们|公众号)|长按识别|领取(资料|红包|优惠券)?|免费(咨询|获取|下载|试看|试听|教程|观看|体验)|'
+    r'在线(客服|咨询)|广告|推广')
+_BREADCRUMB_RE = re.compile(r'(当前位置|您(当前)?的?位置|所在位置|您现在的位置|位置[:：])')
+_CONTROL_RE = re.compile(r'\[\s*(打印|投稿|关闭|评论|返回顶部|回到顶部|顶部)\s*\]')
+_FEED_RE = re.compile(r'(中标|招聘启事|招贤纳士|项目签约|战略合作|喜报|喜讯|导读|快讯|速递|今日要闻)')
+# 高置信样板（子串即可判定，直接整行丢弃）
+_HARD_BOILER_RE = re.compile(
+    r'当前位置|免责声明|版权声明|下一篇|上一篇|返回顶部|相关推荐|热点推荐|排行榜|备案号|'
+    r'ICP备|公安网备|Copyright|All Rights Reserved|Powered by|扫码关注|长按识别')
+_TAIL_RE = re.compile(
+    r'^(下一篇|上一篇|上篇|下篇|版权声明|免责声明|责任编辑|声明[:：]|'
+    r'相关(文章|推荐|阅读|电子期刊|专题|新闻|报道|资料)|热点推荐|热门推荐|推荐阅读|猜你喜欢|'
+    r'相关新闻|延伸阅读|大家都在看|本周?排行|上周?排行|本月?排行|今日排行|热门排行|新闻排行|'
+    r'点击排行|阅读排行|友情提醒|温馨提示|郑重提示|本文来源|稿件来源|原文链接|更多精彩|'
+    r'扫描(二维码|关注)|关注我们|分享到|点赞|收藏|关键词[:：]|备案号?|ICP|公安网备|'
+    r'Copyright|©\s*\d|All Rights Reserved|技术支持[:：]|Powered by)', re.I)
+_ICON_RE = re.compile(r'[\ue000-\uf8ff\uf000-\uf0ff\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]')
+_PREF_RE = re.compile(r'^[\s\*·•▪▸◆›»→\-–—]+')             # 行首项目符号/箭头
+_PREF2_RE = re.compile(r'^[①-⑳A-Za-z0-9]{1,3}[.、)）]')    # 1. / 2) 等编号
+_CJK_SHORT = re.compile(r'^[一-鿿]{1,6}$')
+
+
+def _strip_prefix(line):
+    s = _PREF_RE.sub('', line)
+    s = _PREF2_RE.sub('', s)
+    return s.strip()
+
+
+def clean_body(text):
+    """去除导航/广告/版权/排行等样板，仅保留正文；并对重复长块做兜底截断。"""
+    if not text:
+        return ''
+    lines = text.split('\n')
+    out = []
+    prev = ''
+    rep = 0
+    for raw in lines:
+        line = raw.strip()
+        if line == '':
+            if out and out[-1] == '':
+                continue
+            out.append('')
+            continue
+        line = _ICON_RE.sub('', line).strip()
+        if line == '':
+            if out and out[-1] == '':
+                continue
+            out.append('')
+            continue
+        # 高置信样板（子串）
+        if _HARD_BOILER_RE.search(line):
+            continue
+        # 面包屑 / 纯分隔符 / 面包屑残片
+        if _BREADCRUMB_RE.search(line) or _SEP_RE.match(line) or _CRUMB_FRAG_RE.match(line):
+            continue
+        pl = _strip_prefix(line)
+        if pl in _NAV_WORDS:
+            continue
+        if _MENU_RE.search(line):
+            continue
+        if _PHONE_RE.search(line) or _EMAIL_RE.search(line):
+            continue
+        if _AD_RE.search(line):
+            continue
+        if _CONTROL_RE.search(line):
+            continue
+        if _FEED_RE.search(line):
+            continue
+        # 登录/注册类工具条：拆开后全部为导航词
+        toks = [t for t in re.split(r'[\s|/·•]+', pl) if t]
+        if len(toks) >= 2 and all(t in _NAV_WORDS for t in toks):
+            continue
+        # 频道/栏目列表：>=3 个纯中文短词（1-6 字）且无疑似标点
+        if (len(toks) >= 3 and all(_CJK_SHORT.match(t) for t in toks)
+                and not re.search(r'[。，、；：！？（）《》“”]', line)):
+            continue
+        if line and line == prev:
+            rep += 1
+            if rep >= 2:
+                continue
+        else:
+            rep = 0
+        prev = line
+        out.append(line)
+    # Pass 2：遇到明确的尾部样板标记即截断（至少已有 6 行正文）
+    cut = -1
+    content = 0
+    for i, l in enumerate(out):
+        if l:
+            content += 1
+        if content >= 6 and _TAIL_RE.match(l):
+            cut = i
+            break
+    kept = out[:cut] if cut >= 0 else out
+    # Pass 3：兜底——删除后段中重复出现的长块（间隔 >=12 行）
+    seen = {}
+    cutoff = -1
+    for i, l in enumerate(kept):
+        if len(l) >= 25:
+            if l in seen and (i - seen[l]) >= 12:
+                cutoff = i
+                break
+            seen[l] = i
+    final = kept[:cutoff] if cutoff >= 0 else kept
+    # Pass 4：去除开头的导航块（连续的短行/纯导航词，直到出现正文行）
+    _NAV_HINT_RE = re.compile(r'邮箱|退出|欢迎来到|我要采购|全网询价|移动端|爱采购|网易|VIP')
+    def _is_nav_line(l):
+        if not l:
+            return False
+        if l in _NAV_WORDS:
+            return True
+        s = _strip_prefix(l)
+        if s in _NAV_WORDS:
+            return True
+        if len(s) <= 12 and not re.search(r'[。！？；：，、（）《》]', s):
+            return True
+        return False
+    def _is_content(l):
+        return bool(l) and (len(l) >= 12 or re.search(r'[。！？；]', l))
+    while final:
+        l = final[0]
+        hint = _NAV_HINT_RE.search(l)
+        if _is_content(l) and not hint:
+            break
+        if (not l) or _is_nav_line(l) or hint:
+            final.pop(0)
+        else:
+            break
+    while final and final[-1] == '':
+        final.pop()
+    return '\n'.join(final)
+
+
+def count_words(text):
+    if not text:
+        return 0
+    return len(re.findall(r'[一-鿿]', text)) + len(re.findall(r'[A-Za-z0-9]+', text))
+
+
+
 # ---------- 国标：文件名 -> 标准号 -> 链接 slug ----------
 STD_CODE_RE = re.compile(r'^(GB|T)\s*[/]?\s*(\d{4,5})\s*[-.]?\s*(\d{2,4})?', re.I)
 STD_PREFIX = {}   # 数字前缀 -> slug
@@ -262,13 +419,20 @@ def main():
 
     # 4) 资源（含视频 + type）
     for r in res:
+        raw_body = r.get('body', '') or ''
+        if r.get('video_url') or r.get('status') == 'video':
+            body = ''
+            wc = 0
+        else:
+            body = clean_body(raw_body)
+            wc = count_words(body)
         c.execute('INSERT OR REPLACE INTO resources (id,url,domain,platform,type,category,categories_json,'
                   'levels_json,note,title,body,word_count,status,fetched_at,video_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                   (r['id'], r['url'], r['domain'], r['platform'], r.get('type', '文章'), r['category'],
                    json.dumps(r.get('categories', []), ensure_ascii=False),
                    json.dumps(r.get('levels', []), ensure_ascii=False),
-                   r.get('note', ''), r.get('title', ''), r.get('body', ''),
-                   r.get('word_count', 0), r.get('status', ''), '', r.get('video_url', '')))
+                   r.get('note', ''), r.get('title', ''), body, wc,
+                   r.get('status', ''), '', r.get('video_url', '')))
 
     # 5) 国标
     for i, s in enumerate(stds):

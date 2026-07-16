@@ -372,18 +372,65 @@ function toEmbed(url){
 function cleanBody(text){
   if(!text) return '';
   const lines = text.split('\n');
+  const navWords = new Set(['首页','资讯','产品','求购','品牌','技术','标准','展会','联盟','关于我们','联系我们','加入我们','资料下载','视频列表','行业资讯','技术文章','解决方案','产品中心','服务策略','维修网络','网上报修','企业风采','市场分析','产业播报','管理市场','产业建设','信息快车','行业访谈','专家专栏','业界动态','技术应用','标准动态','人才招聘','招商加盟','联系厂商','新闻中心','帮助中心','服务中心','下载中心','会员中心','个人中心','登录','注册','搜索','设备天地','电子期刊','正文','网站首页','行业新闻','关于我们','联系我们','招聘']);
+  const menuRe = /( - ){2,}|( \| ){2,}|(»){2,}/;
+  const sepRe = /^[\s»>\-—|·／/．。、，,]*$/;
+  const crumbFragRe = /^»\s*.{1,6}$/;
+  const phoneRe = /1[3-9]\d{9}|400[-]?\d{3,4}[-]?\d{3,4}|\d{3,4}-\d{7,8}/;
+  const emailRe = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+  const adRe = /报名|咨询热线|免费领取|限时|招商|加微信|点击咨询|客服(电话|热线)?|微信号|立即(咨询|报名)|抢购|特价|优惠(活动|券)?|联系电话|服务热线|联系方式|手机[:：]|招商(加盟|代理)?|扫码|二维码|关注(我们|公众号)|长按识别|领取(资料|红包|优惠券)?|免费(咨询|获取|下载|试看|试听|教程|观看|体验)|在线(客服|咨询)|广告|推广/;
+  const breadcrumbRe = /(当前位置|您(当前)?的?位置|所在位置|您现在的位置|位置[:：])/;
+  const controlRe = /\[\s*(打印|投稿|关闭|评论|返回顶部|回到顶部|顶部)\s*\]/;
+  const feedRe = /(中标|招聘启事|招贤纳士|项目签约|战略合作|喜报|喜讯|导读|快讯|速递|今日要闻)/;
+  const hardBoilerRe = /当前位置|免责声明|版权声明|下一篇|上一篇|返回顶部|相关推荐|热点推荐|排行榜|备案号|ICP备|公安网备|Copyright|All Rights Reserved|Powered by|扫码关注|长按识别/;
+  const tailRe = /^(下一篇|上一篇|上篇|下篇|版权声明|免责声明|责任编辑|声明[:：]|相关(文章|推荐|阅读|电子期刊|专题|新闻|报道|资料)|热点推荐|热门推荐|推荐阅读|猜你喜欢|相关新闻|延伸阅读|大家都在看|本周?排行|上周?排行|本月?排行|今日排行|热门排行|新闻排行|点击排行|阅读排行|友情提醒|温馨提示|郑重提示|本文来源|稿件来源|原文链接|更多精彩|扫描(二维码|关注)|关注我们|分享到|点赞|收藏|关键词[:：]|备案号?|ICP|公安网备|Copyright|©\s*\d|All Rights Reserved|技术支持[:：]|Powered by)/i;
+  const iconRe = /[\uE000-\uF8FF\uF000-\uF0FF\uFFFD]/;
+  const prefRe = /^[\s\*·•▪▸◆›»→\-–—]+/;
+  const pref2Re = /^[①-⑳A-Za-z0-9]{1,3}[.、)）]/;
+  const cjkShort = /^[一-鿿]{1,6}$/;
+  const stripPrefix = s => { s = s.replace(prefRe,''); s = s.replace(pref2Re,''); return s.trim(); };
   const out=[]; let prev=''; let rep=0;
-  const phoneRe = /1[3-9]\d{9}|400[-]?\d{3,4}[-]?\d{3,4}/;
-  const adRe = /报名|咨询热线|免费领取|限时|招商|加微信|点击咨询|客服(电话|热线)?|微信号|立即(咨询|报名)|抢购|特价|优惠(活动|券)?|联系电话|服务热线|联系方式|手机[:：]|招商(加盟|代理)?/;
-  const navRe = /^(首页|关于我们|联系我们|加入我们|资料下载|视频列表|行业资讯|技术文章|解决方案|产品中心|服务策略|维修网络|网上报修|搜索本网站内容)$/;
   for(let raw of lines){
     let line = raw.trim();
-    if(phoneRe.test(line) || adRe.test(line) || navRe.test(line)) continue;
+    if(line===''){ if(out.length && out[out.length-1]==='') continue; out.push(''); continue; }
+    line = line.replace(iconRe,'').trim();
+    if(line===''){ if(out.length && out[out.length-1]==='') continue; out.push(''); continue; }
+    if(hardBoilerRe.test(line)) continue;
+    if(breadcrumbRe.test(line) || sepRe.test(line) || crumbFragRe.test(line)) continue;
+    const pl = stripPrefix(line);
+    if(navWords.has(pl)) continue;
+    if(menuRe.test(line)) continue;
+    if(phoneRe.test(line) || emailRe.test(line)) continue;
+    if(adRe.test(line)) continue;
+    if(controlRe.test(line)) continue;
+    if(feedRe.test(line)) continue;
+    const toks = pl.split(/[\s|/·•]+/).filter(Boolean);
+    if(toks.length>=2 && toks.every(t=>navWords.has(t))) continue;
+    if(toks.length>=3 && toks.every(t=>cjkShort.test(t)) && !/[。，、；：！？（）《》“”]/.test(line)) continue;
     if(line && line===prev){ rep++; if(rep>=2) continue; } else rep=0;
     prev=line;
-    out.push(raw);
+    out.push(line);
   }
-  return out.join('\n');
+  // 截断于首个尾部样板标记（至少 6 行正文后）
+  let cut=-1, content=0;
+  for(let i=0;i<out.length;i++){ if(out[i]) content++; if(content>=6 && tailRe.test(out[i])){ cut=i; break; } }
+  let kept = cut>=0 ? out.slice(0,cut) : out;
+  // 兜底：删除后段重复出现的长块（间隔>=12行）
+  let seen={}, cutoff=-1;
+  for(let i=0;i<kept.length;i++){ const l=kept[i]; if(l.length>=25){ if(seen[l]!==undefined && (i-seen[l])>=12){ cutoff=i; break; } seen[l]=i; } }
+  let final = cutoff>=0 ? kept.slice(0,cutoff) : kept;
+  // 去除开头的导航块（连续短行/纯导航词，直到出现正文行）
+  const navHintRe = /邮箱|退出|欢迎来到|我要采购|全网询价|移动端|爱采购|网易|VIP/;
+  const isNavLine = l => { if(!l) return false; if(navWords.has(l)) return true; const s=stripPrefix(l); if(navWords.has(s)) return true; if(s.length<=12 && !/[。！？；：，、（）《》]/.test(s)) return true; return false; };
+  const isContent = l => !!l && (l.length>=12 || /[。！？；]/.test(l));
+  while(final.length){
+    const l=final[0]; const hint=navHintRe.test(l);
+    if(isContent(l) && !hint) break;
+    if(!l || isNavLine(l) || hint) final.shift();
+    else break;
+  }
+  while(final.length && final[final.length-1]==='') final.pop();
+  return final.join('\n');
 }
 // 资源正文：转义后把 URL 变为可点击链接
 function linkify(text){
