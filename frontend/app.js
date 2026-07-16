@@ -216,11 +216,15 @@ async function showMaterial(slug){
       <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">${m.prev?t('prev'):''}</a>
       <a class="${m.next?'':'disabled'}" href="${m.next?'#/material/'+m.next:''}">${m.next?t('next'):''}</a>
     </div>`;
-  // 表格横向滚动容器（移动端友好）；正文外链新标签页打开，避免跳出 SPA
+  // 表格横向滚动容器（移动端友好）；正文外链新标签页打开，站内缓存链接保持 SPA 跳转
   $('#content').querySelectorAll('.doc-body table').forEach(t=>{
     const w = el('div','table-wrap'); t.parentNode.insertBefore(w, t); w.appendChild(t);
   });
-  $('#content').querySelectorAll('.doc-body a').forEach(a=>{ a.target='_blank'; a.rel='noopener'; a.classList.add('ext'); });
+  $('#content').querySelectorAll('.doc-body a').forEach(a=>{
+    const href = a.getAttribute('href') || '';
+    if(href.startsWith('http')){ a.target='_blank'; a.rel='noopener'; }
+    if(!a.classList.contains('ext-local')) a.classList.add('ext');
+  });
   renderCatList();
 }
 async function showResource(id){

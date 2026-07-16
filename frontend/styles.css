@@ -84,6 +84,11 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,s
 .doc-body pre{background:#0f2c52;color:#e6f0ff;padding:14px;border-radius:8px;overflow:auto}
 .doc-body pre code{background:none;color:inherit;padding:0}
 .doc-body a{color:var(--cyan-d)}
+/* 教材正文链接：站内缓存 + 外部原站 */
+.doc-body a.ext-local{color:var(--cyan-d);text-decoration:none;border-bottom:1px dashed var(--cyan);font-weight:600;white-space:nowrap}
+.doc-body a.ext-local:hover{background:#eafafb}
+.doc-body a.ext{color:var(--blue2);border-bottom:1px solid var(--blue2);text-decoration:none;font-weight:600;white-space:nowrap}
+.doc-body a.ext:hover{background:#eef3fb}
 .doc-body ul,.doc-body ol{padding-left:22px}
 .doc-body li{margin:4px 0}
 .pager{display:flex;justify-content:space-between;margin-top:24px;gap:10px}

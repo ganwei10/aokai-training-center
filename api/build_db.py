@@ -4,8 +4,15 @@
 双语规则：
 - 每篇中文教材 `<x>.md` 可配套英文 `<x>_en.md`，二者共享同一 slug，以 lang 区分。
 - materials 表以 (slug, lang) 为唯一键；categories 表增加 name_en / blurb_en。
+
+链接处理（关键）：
+- 教材正文中大量「裸 URL」在 Markdown 渲染后只是纯文本、不可点击。
+- 这里先把已下载的资源（含视频）按 url 建索引，再把正文里的 URL 包成 <a>：
+  · 已成功下载正文(status='ok')    -> 指向站内缓存 #/resource/{id}（离线可读，class=ext-local）
+  · 未成功下载（仅链接/视频）       -> 指向原站 target=_blank（至少可点击，class=ext）
 """
 import os, json, sqlite3, re, glob, hashlib
+from urllib.parse import urlparse
 import markdown as md
 
 ROOT = '/Users/weigan/WorkBuddy/2026-07-15-13-48-58'
@@ -52,6 +59,60 @@ def md_to_text(text):
     return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', text)).strip()
 
 
+def esc_attr(s):
+    return (s.replace('&', '&amp;').replace('"', '&quot;')
+             .replace('<', '&lt;').replace('>', '&gt;'))
+
+
+def load_resources():
+    """读取 resources.json（下载的网页）+ 培训视频，合并成统一的资源列表。"""
+    res = []
+    if os.path.exists(RES):
+        res = json.load(open(RES, encoding='utf-8'))
+    if os.path.exists(VID):
+        for v in json.load(open(VID, encoding='utf-8')):
+            res.append({
+                'id': 'vid_' + hashlib.md5(v['url'].encode('utf-8')).hexdigest()[:10],
+                'url': v['url'],
+                'domain': 'youtube.com' if 'youtube' in v['url'] else ('bilibili.com' if 'bilibili' in v['url'] else ''),
+                'platform': '培训视频',
+                'category': v.get('category', '通用'),
+                'categories': [v.get('category', '通用')],
+                'levels': v.get('levels', []),
+                'note': v.get('note', ''),
+                'title': v.get('title', v['url']),
+                'body': '',
+                'word_count': 0,
+                'status': 'video',
+                'video_url': v['url'],
+            })
+    return res
+
+
+def build_urlmap(res):
+    """url -> (resource_id, is_downloaded_ok)"""
+    m = {}
+    for r in res:
+        m[r['url']] = (r['id'], r.get('status') == 'ok')
+    return m
+
+
+def linkify_and_map(html, urlmap):
+    """把正文里的裸 URL 包成可点击链接，并指向本地缓存或原站。"""
+    def repl(match):
+        raw = match.group(0)
+        url = raw.replace('&amp;', '&')  # 还原真实 URL（HTML 转义过 &）
+        if url in urlmap:
+            rid, ok = urlmap[url]
+            if ok:
+                # 已下载正文 -> 站内缓存，离线可读
+                return '<a href="#/resource/%s" class="ext-local">📄 本地缓存</a>' % rid
+        # 未下载 / 未知 -> 指向原站，至少可点击
+        domain = urlparse(url).netloc or url
+        return '<a href="%s" target="_blank" rel="noopener" class="ext">↗ %s</a>' % (esc_attr(url), esc_attr(domain))
+    return re.sub(r'https?://[^\s<>"\'），。、；：）]+', repl, html)
+
+
 def main():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
@@ -72,7 +133,11 @@ def main():
         c.execute('INSERT INTO categories (key,name,name_en,blurb,blurb_en,sort) VALUES (?,?,?,?,?,?)',
                   (k, name, en, bz, be, sort))
 
-    # 教材（递归遍历 培训教材/ 下所有 .md；英文版仅作为中文版 companion 处理）
+    # 1) 先加载资源并建 URL 索引（教材链接要复用它）
+    res = load_resources()
+    urlmap = build_urlmap(res)
+
+    # 2) 教材（递归遍历 培训教材/ 下所有 .md；英文版仅作为中文版 companion 处理）
     mats = []
     group_idx = {'通用': 0}
     for i, (_, n, _, _, _, _) in enumerate(GROUPS):
@@ -98,6 +163,7 @@ def main():
         sort = group_idx.get(grp_name, 9) * 1000 + LEVEL_ORDER.get(level, 5) * 100
         sort += (0 if f.startswith('00_') else 5) * 10
         html = md_to_html(text)
+        html = linkify_and_map(html, urlmap)  # 裸 URL -> 可点击链接（指向本地缓存/原站）
         mats.append((slug, 'zh', GROUP_KEY.get(grp_name, 'general'), grp_name, level,
                      title, html, md_to_text(html), sort, f))
 
@@ -107,6 +173,7 @@ def main():
             et = open(en_path, encoding='utf-8').read()
             en_title = first_h1(et) or f
             ehtml = md_to_html(et)
+            ehtml = linkify_and_map(ehtml, urlmap)
             gk = GROUP_KEY.get(grp_name, 'general')
             mats.append((slug, 'en', gk, GROUP_EN.get(gk, 'General'), level,
                          en_title, ehtml, md_to_text(ehtml), sort, os.path.basename(en_path)))
@@ -115,29 +182,7 @@ def main():
         'INSERT INTO materials (slug,lang,group_key,group_name,level,title,html,text,sort,source) '
         'VALUES (?,?,?,?,?,?,?,?,?,?)', mats)
 
-    # 资源
-    res = []
-    if os.path.exists(RES):
-        res = json.load(open(RES, encoding='utf-8'))
-    # 培训视频（合并进资源库，platform='培训视频'，video_url 用于前端嵌入播放器）
-    if os.path.exists(VID):
-        for v in json.load(open(VID, encoding='utf-8')):
-            cat = v.get('category', '通用')
-            res.append({
-                'id': 'vid_' + hashlib.md5(v['url'].encode('utf-8')).hexdigest()[:10],
-                'url': v['url'],
-                'domain': 'youtube.com' if 'youtube' in v['url'] else ('bilibili.com' if 'bilibili' in v['url'] else ''),
-                'platform': '培训视频',
-                'category': cat,
-                'categories': [cat],
-                'levels': v.get('levels', []),
-                'note': v.get('note', ''),
-                'title': v.get('title', v['url']),
-                'body': '',
-                'word_count': 0,
-                'status': 'video',
-                'video_url': v['url'],
-            })
+    # 3) 写入资源（含视频）
     for r in res:
         c.execute('INSERT OR REPLACE INTO resources (id,url,domain,platform,category,categories_json,'
                   'levels_json,note,title,body,word_count,status,fetched_at,video_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -154,8 +199,11 @@ def main():
     n_res = c.execute('SELECT COUNT(*) FROM resources').fetchone()[0]
     n_ok = c.execute("SELECT COUNT(*) FROM resources WHERE status='ok'").fetchone()[0]
     n_vid = c.execute("SELECT COUNT(*) FROM resources WHERE status='video'").fetchone()[0]
+    n_local = c.execute("SELECT COUNT(*) FROM materials WHERE html LIKE '%ext-local%'").fetchone()[0]
+    n_ext = c.execute("SELECT COUNT(*) FROM materials WHERE html LIKE '%class=\"ext\"%'").fetchone()[0]
     print(f'DB built: {DB}')
     print(f'  materials={n_mat} (zh={n_zh}, en={n_en}), resources={n_res} (text ok={n_ok}, videos={n_vid})')
+    print(f'  material links: local-cache={n_local} rows, external={n_ext} rows')
     conn.close()
 
 
