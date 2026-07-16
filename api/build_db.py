@@ -284,6 +284,18 @@ def count_words(text):
 # ---------- 国标：文件名 -> 标准号 -> 链接 slug ----------
 STD_CODE_RE = re.compile(r'^(GB|T)\s*[/]?\s*(\d{4,5})\s*[-.]?\s*(\d{2,4})?', re.I)
 STD_PREFIX = {}   # 数字前缀 -> slug
+# 非 GB 标准（美/加/欧）的展示代号：文件名 slug -> 易读标准号
+STD_CODE_MAP = {
+    'US_3A_Sanitary': '3-A',
+    'US_NSF_ANSI_169': 'NSF/ANSI 169',
+    'US_USDA_FSIS': 'USDA FSIS (9 CFR 416/417)',
+    'CA_CFIA_Meat_Hygiene': 'CFIA',
+    'CA_SFCR_Meat': 'SFCR',
+    'EU_852_2004': '(EC) 852/2004',
+    'EU_853_2004': '(EC) 853/2004',
+    'EU_854_2004': '(EC) 854/2004',
+    'EU_EN_1672_2': 'EN 1672-2',
+}
 
 
 def load_standards():
@@ -302,6 +314,8 @@ def load_standards():
         if m:
             code = ('GB/T ' if m.group(1).upper() == 'T' else 'GB ') + m.group(2) + \
                    (('-' + m.group(3)) if m.group(3) else '')
+        elif slug in STD_CODE_MAP:
+            code = STD_CODE_MAP[slug]
         # 标准号数字前缀用于教材内 GB 编号匹配
         dm = re.search(r'(\d{4,5})', slug)
         if dm:
