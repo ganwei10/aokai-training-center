@@ -14,12 +14,13 @@ const I18N = {
     level_label:'级别', all:'全部', lv1:'初级', lv2:'中级', lv3:'高阶', lv0:'总览',
     res_audience:'适用人群', res_type:'资源类型',
     cat_presale:'售前', cat_sales:'销售', cat_service:'售后', cat_general:'通用',
-    comp_docs:'公司文档', comp_std:'相关国家标准',
+    comp_docs:'公司文档', comp_std:'相关标准',
+    dev_label:'设备类型', region_label:'地区',
     note_label:'教材备注：',
     home_title:'欢迎来到奥楷培训学习中心',
     home_intro:'肉类食品加工数字化设备（灌装/扎线/扭结、包装、码垛）产品与技术培训平台。所有外部链接内容已下载归档，可离线学习。',
-    home_res_desc:'33 篇全网产品与技术培训资料 + 23 个培训视频，已归档可离线学习',
-    home_comp_desc:'奥楷官方原始文档与国家标准合集，可下载 / 在线阅读',
+    home_res_desc:'外链培训资料 + 23 个培训视频，已归档可离线学习',
+    home_comp_desc:'奥楷官方原始文档与中 / 美 / 加 / 欧标准合集，可下载 / 在线阅读',
     prev:'← 上一篇', next:'下一篇 →',
     placeholder_res:'从左侧选择资源查看详情',
     loading:'加载中…', notfound:'未找到该教材', notfound_res:'未找到该资源', notfound_std:'未找到该标准',
@@ -34,12 +35,13 @@ const I18N = {
     level_label:'Level', all:'All', lv1:'Beginner', lv2:'Intermediate', lv3:'Advanced', lv0:'Overview',
     res_audience:'Audience', res_type:'Type',
     cat_presale:'Pre-sales', cat_sales:'Sales', cat_service:'Service', cat_general:'General',
-    comp_docs:'Company Docs', comp_std:'National Standards',
+    comp_docs:'Company Docs', comp_std:'Standards',
+    dev_label:'Device', region_label:'Region',
     note_label:'Note: ',
     home_title:'Welcome to Aokai Training Center',
     home_intro:'A training platform for meat-processing digitalization equipment (filling / linking / twisting, packaging, palletizing) — products & technology. All external links are downloaded and archived for offline learning.',
-    home_res_desc:'33 web training resources + 23 training videos, archived for offline learning',
-    home_comp_desc:'Aokai official documents & national standards — download / read online',
+    home_res_desc:'Web training resources + 23 training videos, archived for offline learning',
+    home_comp_desc:'Aokai official docs & CN / US / CA / EU standards — download / read online',
     prev:'← Prev', next:'Next →',
     placeholder_res:'Select a resource from the left',
     loading:'Loading…', notfound:'Material not found', notfound_res:'Resource not found', notfound_std:'Standard not found',
@@ -48,7 +50,7 @@ const I18N = {
   }
 };
 
-let STATE = { tab:'materials', level:'', cat:'', plat:'', materials:[], cats:[], lang:'zh', company:null };
+let STATE = { tab:'materials', level:'', cat:'', plat:'', deviceMat:'', deviceRes:'', deviceStd:'', devices:[], materials:[], cats:[], lang:'zh', company:null };
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
@@ -65,9 +67,13 @@ async function get(path){ const r = await fetch(API + withLang(path)); if(!r.ok)
 /* ---------- 初始化 ---------- */
 async function init(){
   try { STATE.lang = localStorage.getItem('aokai_lang') || 'zh'; } catch(e){ STATE.lang='zh'; }
-  const lb = $('#langBtn'); if(lb) lb.textContent = STATE.lang==='en' ? '中' : 'EN';
+  const lb = $('#langBtn');   if(lb) lb.textContent = STATE.lang==='en' ? '中' : 'EN';
   bindEvents();
   try { STATE.cats = await get('/categories'); } catch(e){ STATE.cats=[]; }
+  try { const dv = await get('/devices'); STATE.devices = dv.devices || []; } catch(e){ STATE.devices=[]; }
+  renderDeviceFilter('#matDeviceFilter', STATE.deviceMat, v=>{ STATE.deviceMat=v; syncDeviceChips('#matDeviceFilter', v); loadMaterials(); renderCatList(); });
+  renderDeviceFilter('#resDeviceFilter', STATE.deviceRes, v=>{ STATE.deviceRes=v; syncDeviceChips('#resDeviceFilter', v); loadResources(); });
+  renderDeviceFilter('#compStdDeviceFilter', STATE.deviceStd, v=>{ STATE.deviceStd=v; syncDeviceChips('#compStdDeviceFilter', v); refreshStandards(); });
   applyI18n();
   await route();
   window.addEventListener('hashchange', route);
@@ -146,7 +152,11 @@ function setLang(lang){
 
 /* ---------- 教材侧栏 ---------- */
 async function loadMaterials(){
-  STATE.materials = await get('/materials' + (STATE.level?('?level='+STATE.level):''));
+  const q = new URLSearchParams();
+  if(STATE.level) q.set('level', STATE.level);
+  if(STATE.deviceMat) q.set('device', STATE.deviceMat);
+  const qs = q.toString();
+  STATE.materials = await get('/materials' + (qs ? ('?'+qs) : ''));
 }
 function renderCatList(){
   const box = $('#catList'); box.innerHTML='';
@@ -185,6 +195,7 @@ async function loadResources(){
   if(STATE.cat) q.set('category', STATE.cat);
   if(STATE.plat) q.set('type', STATE.plat);
   if(STATE.level) q.set('level', STATE.level);
+  if(STATE.deviceRes) q.set('device', STATE.deviceRes);
   const list = await get('/resources' + (q.toString()?'?'+q.toString():''));
   const box = $('#resList'); box.innerHTML='';
   if(!list.length){ box.appendChild(el('div','placeholder','该筛选下暂无资源')); return; }
@@ -219,6 +230,71 @@ function renderPlatFilter(){
   });
 }
 
+/* ---------- 设备类型筛选（教材/资源/标准通用） ---------- */
+function renderDeviceFilter(containerId, activeDevice, onSelect){
+  const fg = $(containerId);
+  fg.querySelectorAll('.chip[data-device]').forEach(c=>c.remove());
+  const all = el('button', 'chip' + (activeDevice===''?' active':''), t('all'));
+  all.dataset.device = '';
+  all.onclick = ()=> onSelect('');
+  fg.appendChild(all);
+  (STATE.devices||[]).forEach(d=>{
+    const c = el('button', 'chip' + (activeDevice===d.name?' active':''),
+      d.name + (d.count!=null ? ` <span class="cnt">${d.count}</span>` : ''));
+    c.dataset.device = d.name;
+    c.onclick = ()=> onSelect(d.name);
+    fg.appendChild(c);
+  });
+}
+function syncDeviceChips(containerId, activeDevice){
+  $(containerId).querySelectorAll('.chip[data-device]').forEach(x=>x.classList.toggle('active', x.dataset.device===activeDevice));
+}
+function cssRegion(region){ return ({'中国':'cn','美国':'us','加拿大':'ca','欧盟':'eu'}[region]) || 'cn'; }
+function groupStandardsByRegion(stds){
+  const order = ['中国','美国','加拿大','欧盟'];
+  const groups = {};
+  stds.forEach(s=>{ (groups[s.region] = groups[s.region] || []).push(s); });
+  const keys = order.filter(r=>groups[r]).concat(Object.keys(groups).filter(r=>!order.includes(r)));
+  return keys.map(r=>({region:r, items:groups[r]}));
+}
+function stdGridHtml(stds){
+  let html = '';
+  groupStandardsByRegion(stds).forEach(({region, items})=>{
+    html += `<div class="std-region"><div class="std-region-bar"><span class="region-badge r-${cssRegion(region)}">${esc(region)}</span><span class="cnt">${items.length}</span></div><div class="std-grid">`;
+    items.forEach(s=>{
+      html += `<a class="std-card" href="#/standard/${esc(s.id)}">
+        <div class="sc-code">${esc(s.code)}</div>
+        <div class="sc-title">${esc(s.title.replace(/^[^】]*】/,''))}</div>
+        <div class="sc-dev">${(s.devices||[]).map(d=>`<span class="dev-tag">${esc(d)}</span>`).join('')}</div></a>`;
+    });
+    html += `</div></div>`;
+  });
+  return html;
+}
+function renderStdList(stds){
+  const sl = $('#compStdList'); if(!sl) return; sl.innerHTML='';
+  groupStandardsByRegion(stds).forEach(({region, items})=>{
+    const head = el('div','std-region-head', `<span class="region-badge r-${cssRegion(region)}">${esc(region)}</span><span class="cnt">${items.length}</span>`);
+    sl.appendChild(head);
+    items.forEach(s=>{
+      const item = el('div','res-item');
+      item.innerHTML = `<div class="rt">${esc(s.code)}</div><div class="rmeta"><span>${esc(s.title.replace(/^[^】]*】/,''))}</span> ${(s.devices||[]).map(d=>`<span class="dev-tag">${esc(d)}</span>`).join('')}</div>`;
+      item.onclick = ()=>{ closeDrawer(); location.hash='#/standard/'+s.id; };
+      sl.appendChild(item);
+    });
+  });
+}
+async function loadCompanyStdList(){
+  const q = new URLSearchParams(); if(STATE.deviceStd) q.set('device', STATE.deviceStd);
+  try { const stds = await get('/standards' + (q.toString()?'?'+q.toString():'')); renderStdList(stds); } catch(e){}
+}
+async function refreshStandards(){
+  const q = new URLSearchParams(); if(STATE.deviceStd) q.set('device', STATE.deviceStd);
+  const stds = await get('/standards' + (q.toString()?'?'+q.toString():''));
+  renderStdList(stds);
+  const grid = $('#stdGrid'); if(grid) grid.innerHTML = stdGridHtml(stds);
+}
+
 /* ---------- 公司资料侧栏 + 页面 ---------- */
 async function ensureCompany(){
   if(!STATE.company){ STATE.company = await get('/company'); }
@@ -232,13 +308,8 @@ function renderCompanySidebar(data){
     item.onclick = ()=>{ closeDrawer(); if(d.kind==='file'){ openPdfReader(d.asset, d.title); } else { location.hash='#/company'; } };
     dl.appendChild(item);
   });
-  const sl = $('#compStdList'); sl.innerHTML='';
-  (data.standards||[]).forEach(s=>{
-    const item = el('div','res-item');
-    item.innerHTML = `<div class="rt">${esc(s.code)}</div><div class="rmeta"><span>${esc(s.title.replace(/^[^】]*】/,'')).slice(0,18)}</span></div>`;
-    item.onclick = ()=>{ closeDrawer(); location.hash='#/standard/'+s.id; };
-    sl.appendChild(item);
-  });
+  // 标准列表（按地区分组，受设备类型筛选影响）异步渲染
+  loadCompanyStdList();
 }
 async function showCompany(){
   const data = await ensureCompany();
@@ -257,15 +328,11 @@ async function showCompany(){
     });
     html += `</div>`;
   }
-  // 相关国家标准
-  if((data.standards||[]).length){
-    html += `<h2 class="sec">📐 ${t('comp_std')}</h2><div class="std-grid">`;
-    data.standards.forEach(s=>{
-      html += `<a class="std-card" href="#/standard/${esc(s.id)}">
-        <div class="sc-code">${esc(s.code)}</div>
-        <div class="sc-title">${esc(s.title.replace(/^[^】]*】/,''))}</div></a>`;
-    });
-    html += `</div>`;
+  // 相关标准（按地区分组，受设备类型筛选影响）
+  const sq = new URLSearchParams(); if(STATE.deviceStd) sq.set('device', STATE.deviceStd);
+  const stds = await get('/standards' + (sq.toString()?'?'+sq.toString():''));
+  if(stds.length){
+    html += `<h2 class="sec">📐 ${t('comp_std')}</h2><div id="stdGrid" class="std-grid-wrap">${stdGridHtml(stds)}</div>`;
   }
   $('#content').innerHTML = html;
   wrapTables();
@@ -281,7 +348,7 @@ async function showMaterial(slug){
   const lv = LV[m.level]||{c:'gen',t:m.level};
   $('#content').innerHTML = `
     <div class="doc-head"><h1>${esc(m.title)}</h1><span class="badge ${lv.c}">${lvLabel(m.level)}</span></div>
-    <div class="doc-meta">${esc(m.group_name)} · ${t('tab_materials')}</div>
+    <div class="doc-meta">${esc(m.group_name)} · ${t('tab_materials')}${(m.devices||[]).map(d=>' · <span class="dev-tag">'+esc(d)+'</span>').join('')}</div>
     <div class="doc-body">${m.html}</div>
     <div class="pager">
       <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">${m.prev?t('prev'):''}</a>
@@ -311,7 +378,7 @@ async function showResource(id){
     <div class="res-detail">
       <h1>${esc(r.title||r.domain)}</h1>
       <div class="meta">${STATE.lang==='en'?'Source':'来源'}：${esc(r.domain)} · ${STATE.lang==='en'?'Type':'类型'}：${esc(r.type||r.platform)} · ${STATE.lang==='en'?'For':'适用'}：${esc(r.category)}
-        ${(r.levels||[]).map(l=>'· '+lvLabel(l)).join('')}${isVideo?' · 🎬 '+(STATE.lang==='en'?'Training video':'培训视频'):''}</div>
+        ${(r.levels||[]).map(l=>'· '+lvLabel(l)).join('')}${(r.devices||[]).map(d=>' · <span class="dev-tag">'+esc(d)+'</span>').join('')}${isVideo?' · 🎬 '+(STATE.lang==='en'?'Training video':'培训视频'):''}</div>
       ${r.note?`<div class="note"><strong>${t('note_label')}</strong>${esc(r.note)}</div>`:''}
       ${mediaHtml}
       ${bodyHtml}
@@ -326,7 +393,7 @@ async function showStandard(code){
   ensureCompany().then(renderCompanySidebar);
   $('#content').innerHTML = `
     <div class="doc-head"><h1>${esc(r.title)}</h1><span class="badge gen">${esc(r.code)}</span></div>
-    <div class="doc-meta">${t('comp_std')} · ${t('tab_company')}</div>
+    <div class="doc-meta">${t('comp_std')} · ${t('tab_company')} · <span class="region-badge r-${cssRegion(r.region)}">${esc(r.region)}</span>${(r.devices||[]).map(d=>` <span class="dev-tag">${esc(d)}</span>`).join('')}</div>
     <div class="doc-body std-body">${r.html}</div>
     <div class="pager">
       <a class="${r.prev?'':'disabled'}" href="${r.prev?'#/standard/'+r.prev:''}">${r.prev?t('prev'):''}</a>

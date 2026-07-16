@@ -47,18 +47,22 @@ def categories(lang: str = 'zh'):
 
 
 @app.get('/api/materials')
-def materials(group: str = None, level: str = None, q: str = None, lang: str = 'zh'):
+def materials(group: str = None, level: str = None, device: str = None, q: str = None, lang: str = 'zh'):
     conn = db()
-    sql = 'SELECT slug,group_key,group_name,level,title,sort FROM materials WHERE lang=?'
+    sql = 'SELECT slug,group_key,group_name,level,title,sort,devices_json FROM materials WHERE lang=?'
     args = [lang]
     if group:
         sql += ' AND group_key=?'; args.append(group)
     if level:
         sql += ' AND level=?'; args.append(level)
+    if device:
+        sql += ' AND devices_json LIKE ?'; args.append(f'%{device}%')
     if q:
         sql += ' AND (title LIKE ? OR text LIKE ?)'; args += [f'%{q}%', f'%{q}%']
     sql += ' ORDER BY sort'
     rows = [row_to_dict(x) for x in conn.execute(sql, args).fetchall()]
+    for r in rows:
+        r['devices'] = json.loads(r.pop('devices_json') or '[]')
     conn.close()
     return rows
 
@@ -82,10 +86,10 @@ def material(slug: str, lang: str = 'zh'):
 
 
 @app.get('/api/resources')
-def resources(category: str = None, platform: str = None, type: str = None, status: str = None, level: str = None, q: str = None):
+def resources(category: str = None, platform: str = None, type: str = None, status: str = None, level: str = None, device: str = None, q: str = None):
     conn = db()
     sql = ('SELECT id,url,domain,platform,type,category,categories_json,levels_json,note,title,'
-           'word_count,status,video_url FROM resources WHERE 1=1')
+           'word_count,status,video_url,devices_json FROM resources WHERE 1=1')
     args = []
     if category:
         sql += ' AND category=?'; args.append(category)
@@ -97,6 +101,8 @@ def resources(category: str = None, platform: str = None, type: str = None, stat
         sql += ' AND status=?'; args.append(status)
     if level:
         sql += ' AND levels_json LIKE ?'; args.append(f'%{level}%')
+    if device:
+        sql += ' AND devices_json LIKE ?'; args.append(f'%{device}%')
     if q:
         sql += ' AND (title LIKE ? OR body LIKE ? OR note LIKE ?)'
         args += [f'%{q}%', f'%{q}%', f'%{q}%']
@@ -105,6 +111,7 @@ def resources(category: str = None, platform: str = None, type: str = None, stat
     for r in rows:
         r['categories'] = json.loads(r.pop('categories_json') or '[]')
         r['levels'] = json.loads(r.pop('levels_json') or '[]')
+        r['devices'] = json.loads(r.pop('devices_json') or '[]')
     conn.close()
     return rows
 
@@ -132,10 +139,18 @@ def resource(rid: str):
 
 
 @app.get('/api/standards')
-def standards():
+def standards(region: str = None, device: str = None):
     conn = db()
-    rows = [row_to_dict(x) for x in conn.execute(
-        'SELECT id,code,title FROM standards ORDER BY sort').fetchall()]
+    sql = 'SELECT id,code,title,region,region_code,devices_json FROM standards WHERE 1=1'
+    args = []
+    if region:
+        sql += ' AND region=?'; args.append(region)
+    if device:
+        sql += ' AND devices_json LIKE ?'; args.append(f'%{device}%')
+    sql += ' ORDER BY sort'
+    rows = [row_to_dict(x) for x in conn.execute(sql, args).fetchall()]
+    for r in rows:
+        r['devices'] = json.loads(r.pop('devices_json') or '[]')
     conn.close()
     return rows
 
@@ -147,6 +162,7 @@ def standard(code: str):
     if not r:
         raise HTTPException(404, 'not found')
     d = row_to_dict(r)
+    d['devices'] = json.loads(d.pop('devices_json') or '[]')
     all_ids = [x['id'] for x in conn.execute('SELECT id FROM standards ORDER BY sort').fetchall()]
     if code in all_ids:
         i = all_ids.index(code)
@@ -156,14 +172,38 @@ def standard(code: str):
     return d
 
 
+@app.get('/api/devices')
+def devices():
+    conn = db()
+    # 设备类型主列表（中/英），含各类型在 materials+resources 中的数量
+    devs = [
+        {'key': 'fill', 'name': '灌装/扎线/扭结', 'name_en': 'Filling / Linking / Twisting'},
+        {'key': 'pack', 'name': '包装', 'name_en': 'Packaging'},
+        {'key': 'pallet', 'name': '码垛', 'name_en': 'Palletizing'},
+        {'key': 'general', 'name': '通用', 'name_en': 'General'},
+    ]
+    for d in devs:
+        n = conn.execute(
+            "SELECT COUNT(*) FROM materials WHERE devices_json LIKE ?", (f'%{d["name"]}%',)).fetchone()[0]
+        n += conn.execute(
+            "SELECT COUNT(*) FROM resources WHERE devices_json LIKE ?", (f'%{d["name"]}%',)).fetchone()[0]
+        d['count'] = n
+    conn.close()
+    return {'devices': devs}
+
+
 @app.get('/api/company')
 def company():
     conn = db()
     docs = [row_to_dict(x) for x in conn.execute(
-        'SELECT kind,slug,title,asset,desc FROM company ORDER BY sort').fetchall()]
+        'SELECT kind,slug,title,asset,desc,devices_json FROM company ORDER BY sort').fetchall()]
+    for d in docs:
+        d['devices'] = json.loads(d.pop('devices_json') or '[]')
     intro = conn.execute("SELECT html FROM company WHERE kind='intro'").fetchone()
     stds = [row_to_dict(x) for x in conn.execute(
-        'SELECT id,code,title FROM standards ORDER BY sort').fetchall()]
+        'SELECT id,code,title,region,region_code,devices_json FROM standards ORDER BY sort').fetchall()]
+    for s in stds:
+        s['devices'] = json.loads(s.pop('devices_json') or '[]')
     conn.close()
     return {'intro_html': intro['html'] if intro else '', 'docs': docs, 'standards': stds}
 

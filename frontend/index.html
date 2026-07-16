@@ -48,6 +48,10 @@
           <button class="chip" data-level="中级" data-i18n="lv2">中级</button>
           <button class="chip" data-level="高阶" data-i18n="lv3">高阶</button>
         </div>
+        <div class="filter-group" id="matDeviceFilter">
+          <div class="fg-title" data-i18n="dev_label">设备类型</div>
+          <button class="chip active" data-device="">全部</button>
+        </div>
         <div id="catList" class="cat-list"></div>
       </div>
       <div id="sideResources" class="side-panel hidden">
@@ -70,6 +74,10 @@
           <div class="fg-title" data-i18n="res_type">资源类型</div>
           <button class="chip active" data-plat="" data-i18n="all">全部</button>
         </div>
+        <div class="filter-group" id="resDeviceFilter">
+          <div class="fg-title" data-i18n="dev_label">设备类型</div>
+          <button class="chip active" data-device="">全部</button>
+        </div>
         <div id="resList" class="res-list"></div>
       </div>
       <div id="sideCompany" class="side-panel hidden">
@@ -78,7 +86,11 @@
           <div id="compDocList" class="res-list"></div>
         </div>
         <div class="filter-group">
-          <div class="fg-title" data-i18n="comp_std">相关国家标准</div>
+          <div class="fg-title" data-i18n="comp_std">相关标准</div>
+          <div class="filter-group" id="compStdDeviceFilter">
+            <div class="fg-subtitle" data-i18n="dev_label">设备类型</div>
+            <button class="chip active" data-device="">全部</button>
+          </div>
           <div id="compStdList" class="res-list"></div>
         </div>
       </div>

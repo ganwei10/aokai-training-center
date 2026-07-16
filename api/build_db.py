@@ -19,7 +19,7 @@ import markdown as md
 ROOT = '/Users/weigan/WorkBuddy/2026-07-15-13-48-58'
 MAT = os.path.join(ROOT, '培训教材')
 COMPANY = os.path.join(ROOT, '公司资料')
-STDDIR = os.path.join(COMPANY, '国标')
+STDDIR = os.path.join(COMPANY, '标准库')
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'assets')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +45,59 @@ FILE_ORDER = {'00_使用说明': 0, '初级': 1, '中级': 2, '高阶': 3, 'READ
 
 # 资源 platform -> 资源类型
 TYPE_MAP = {'培训视频': '培训视频', '标准查询': '标准', '文档资料': '文档'}
+
+# ---------- 设备类型标签（全站资料通用） ----------
+# (key, 中文名, 英文名) —— 顺序即筛选展示顺序
+DEVICE_TYPES = [
+    ('fill', '灌装/扎线/扭结', 'Filling / Linking / Twisting'),
+    ('pack', '包装', 'Packaging'),
+    ('pallet', '码垛', 'Palletizing'),
+    ('general', '通用', 'General'),
+]
+DEVICE_KEY = {k: (zh, en) for k, zh, en in DEVICE_TYPES}
+
+# 关键词 -> 设备类型（命中任一即打该标签；都不命中落「通用」）
+DEVICE_KEYWORDS = {
+    'fill': ['灌装', '灌肠', '扎线', '扭结', '定量', '打卡', '肠衣', '分份',
+             '真空灌肠', '扭结机', '扎线机', '灌肠机', '定量灌', '灌香肠', '充填'],
+    'pack': ['包装', '真空', '封口', '拉伸膜', '贴标', '枕式', '给袋式', '气调',
+             '热成型', '包装机', '真空包装', '拉伸', '封箱', '裹包'],
+    'pallet': ['码垛', '机器人', '抓取', '堆叠', '托盘', '码垛机', '装箱', '拆垛',
+               '抓取机器人', '码垛机器人', '上下料'],
+}
+
+
+def detect_devices(text):
+    """根据正文/标题关键词识别设备类型标签，返回标签中文名列表（至少含「通用」）。"""
+    if not text:
+        return ['通用']
+    hit = set()
+    for dev, kws in DEVICE_KEYWORDS.items():
+        for kw in kws:
+            if kw in text:
+                hit.add(dev)
+                break
+    if not hit:
+        return ['通用']
+    out = [DEVICE_KEY[d][0] for d, _, _ in DEVICE_TYPES if d in hit]
+    return out
+
+
+# 标准文件名前缀 -> 地区（中国 / 美国 / 加拿大 / 欧盟）
+REGION_MAP = [
+    (re.compile(r'^GB', re.I), '中国', 'CN'),
+    (re.compile(r'^US_', re.I), '美国', 'US'),
+    (re.compile(r'^CA_', re.I), '加拿大', 'CA'),
+    (re.compile(r'^EU_', re.I), '欧盟', 'EU'),
+]
+REGION_ORDER = {'中国': 0, '美国': 1, '加拿大': 2, '欧盟': 3}
+
+
+def detect_region(slug):
+    for rx, zh, code in REGION_MAP:
+        if rx.match(slug):
+            return zh, code
+    return '中国', 'CN'
 
 
 def slugify(path):
@@ -254,7 +307,11 @@ def load_standards():
         if dm:
             STD_PREFIX[dm.group(1)] = slug
         out.append({'slug': slug, 'code': code or slug, 'title': title,
-                    'html': md_to_html(text), 'text': md_to_text(text)})
+                    'html': md_to_html(text), 'text': md_to_text(text),
+                    'region': detect_region(slug)[0], 'region_code': detect_region(slug)[1],
+                    'devices': detect_devices(text)})
+    # 按地区顺序（中国→美国→加拿大→欧盟）再按文件名稳定排序
+    out.sort(key=lambda s: (REGION_ORDER.get(s['region'], 9), s['slug']))
     return out
 
 
@@ -353,14 +410,14 @@ def main():
         blurb TEXT, blurb_en TEXT, sort INTEGER);
     CREATE TABLE materials (id INTEGER PRIMARY KEY, slug TEXT, lang TEXT, group_key TEXT, group_name TEXT,
         level TEXT, title TEXT, html TEXT, text TEXT, sort INTEGER, source TEXT,
-        UNIQUE(slug, lang));
+        devices_json TEXT, UNIQUE(slug, lang));
     CREATE TABLE resources (id TEXT PRIMARY KEY, url TEXT, domain TEXT, platform TEXT, type TEXT,
         category TEXT, categories_json TEXT, levels_json TEXT, note TEXT, title TEXT, body TEXT,
-        word_count INTEGER, status TEXT, fetched_at TEXT, video_url TEXT);
+        word_count INTEGER, status TEXT, fetched_at TEXT, video_url TEXT, devices_json TEXT);
     CREATE TABLE standards (id TEXT PRIMARY KEY, code TEXT, title TEXT, html TEXT, text TEXT,
-        sort INTEGER);
+        sort INTEGER, region TEXT, region_code TEXT, devices_json TEXT);
     CREATE TABLE company (id INTEGER PRIMARY KEY, kind TEXT, slug TEXT UNIQUE, title TEXT,
-        html TEXT, asset TEXT, desc TEXT, sort INTEGER);
+        html TEXT, asset TEXT, desc TEXT, sort INTEGER, devices_json TEXT);
     ''')
     for k, name, en, bz, be, sort in GROUPS:
         c.execute('INSERT INTO categories (key,name,name_en,blurb,blurb_en,sort) VALUES (?,?,?,?,?,?)',
@@ -400,8 +457,9 @@ def main():
         sort += (0 if f.startswith('00_') else 5) * 10
         html = md_to_html(text)
         html = linkify_and_map(html, urlmap, STD_PREFIX)
+        devs = json.dumps(detect_devices(title + '\n' + text), ensure_ascii=False)
         mats.append((slug, 'zh', GROUP_KEY.get(grp_name, 'general'), grp_name, level,
-                     title, html, md_to_text(html), sort, f))
+                     title, html, md_to_text(html), sort, f, devs))
 
         en_path = os.path.splitext(path)[0] + '_en.md'
         if os.path.exists(en_path):
@@ -411,11 +469,12 @@ def main():
             ehtml = linkify_and_map(ehtml, urlmap, STD_PREFIX)
             gk = GROUP_KEY.get(grp_name, 'general')
             mats.append((slug, 'en', gk, GROUP_EN.get(gk, 'General'), level,
-                         en_title, ehtml, md_to_text(ehtml), sort, os.path.basename(en_path)))
+                         en_title, ehtml, md_to_text(ehtml), sort, os.path.basename(en_path),
+                         json.dumps(detect_devices(en_title + '\n' + et), ensure_ascii=False)))
 
     c.executemany(
-        'INSERT INTO materials (slug,lang,group_key,group_name,level,title,html,text,sort,source) '
-        'VALUES (?,?,?,?,?,?,?,?,?,?)', mats)
+        'INSERT INTO materials (slug,lang,group_key,group_name,level,title,html,text,sort,source,devices_json) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?)', mats)
 
     # 4) 资源（含视频 + type）
     for r in res:
@@ -423,27 +482,32 @@ def main():
         if r.get('video_url') or r.get('status') == 'video':
             body = ''
             wc = 0
+            devs = json.dumps(detect_devices(r.get('title', '') + '\n' + (r.get('note', '') or '')), ensure_ascii=False)
         else:
             body = clean_body(raw_body)
             wc = count_words(body)
+            devs = json.dumps(detect_devices(r.get('title', '') + '\n' + body), ensure_ascii=False)
         c.execute('INSERT OR REPLACE INTO resources (id,url,domain,platform,type,category,categories_json,'
-                  'levels_json,note,title,body,word_count,status,fetched_at,video_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                  'levels_json,note,title,body,word_count,status,fetched_at,video_url,devices_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                   (r['id'], r['url'], r['domain'], r['platform'], r.get('type', '文章'), r['category'],
                    json.dumps(r.get('categories', []), ensure_ascii=False),
                    json.dumps(r.get('levels', []), ensure_ascii=False),
                    r.get('note', ''), r.get('title', ''), body, wc,
-                   r.get('status', ''), '', r.get('video_url', '')))
+                   r.get('status', ''), '', r.get('video_url', ''), devs))
 
-    # 5) 国标
+    # 5) 标准库（中/美/加/欧）
     for i, s in enumerate(stds):
-        c.execute('INSERT OR REPLACE INTO standards (id,code,title,html,text,sort) VALUES (?,?,?,?,?,?)',
-                  (s['slug'], s['code'], s['title'], s['html'], s['text'], i))
+        c.execute('INSERT OR REPLACE INTO standards (id,code,title,html,text,sort,region,region_code,devices_json) VALUES (?,?,?,?,?,?,?,?,?)',
+                  (s['slug'], s['code'], s['title'], s['html'], s['text'], i,
+                   s.get('region', '中国'), s.get('region_code', 'CN'),
+                   json.dumps(s.get('devices', ['通用']), ensure_ascii=False)))
 
     # 6) 公司资料
     comp = load_company()
     for i, d in enumerate(comp):
-        c.execute('INSERT OR REPLACE INTO company (kind,slug,title,html,asset,desc,sort) VALUES (?,?,?,?,?,?,?)',
-                  (d['kind'], d['slug'], d['title'], d['html'], d['asset'], d['desc'], i))
+        c.execute('INSERT OR REPLACE INTO company (kind,slug,title,html,asset,desc,sort,devices_json) VALUES (?,?,?,?,?,?,?,?)',
+                  (d['kind'], d['slug'], d['title'], d['html'], d['asset'], d['desc'], i,
+                   json.dumps(['通用'], ensure_ascii=False)))
 
     conn.commit()
     n_mat = c.execute('SELECT COUNT(*) FROM materials').fetchone()[0]
@@ -454,13 +518,21 @@ def main():
     n_vid = c.execute("SELECT COUNT(*) FROM resources WHERE status='video'").fetchone()[0]
     from collections import Counter
     types = Counter(c.execute('SELECT type, COUNT(*) FROM resources GROUP BY type').fetchall())
+    regions = Counter(c.execute('SELECT region, COUNT(*) FROM standards GROUP BY region ORDER BY region').fetchall())
+    devc = Counter()
+    for row in c.execute('SELECT devices_json FROM materials').fetchall():
+        for d in json.loads(row[0] or '[]'): devc[d] += 1
+    for row in c.execute('SELECT devices_json FROM resources').fetchall():
+        for d in json.loads(row[0] or '[]'): devc[d] += 1
     n_std = c.execute('SELECT COUNT(*) FROM standards').fetchone()[0]
     n_comp = c.execute('SELECT COUNT(*) FROM company').fetchone()[0]
     n_local = c.execute("SELECT COUNT(*) FROM materials WHERE html LIKE '%ext-local%'").fetchone()[0]
     print(f'DB built: {DB}')
     print(f'  materials={n_mat} (zh={n_zh}, en={n_en})')
     print(f'  resources={n_res} (text ok={n_ok}, videos={n_vid})  types={dict(types)}')
-    print(f'  standards={n_std}  company_docs={n_comp}')
+    print(f'  standards={n_std}  regions={dict(regions)}')
+    print(f'  company_docs={n_comp}')
+    print(f'  device tags: {dict(devc)}')
     print(f'  material links: local-cache={n_local} rows')
     conn.close()
 
