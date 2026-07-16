@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f2c52" />
   <title>奥楷培训学习中心</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -28,6 +29,14 @@
 
   <div class="layout">
     <aside id="sidebar" class="sidebar">
+      <div class="drawer-head">
+        <span class="dh-title">奥楷培训学习中心</span>
+        <button id="drawerClose" class="drawer-close" aria-label="关闭菜单">×</button>
+      </div>
+      <div class="side-tabs">
+        <button class="stab active" data-tab="materials">内部教材</button>
+        <button class="stab" data-tab="resources">外链资源库</button>
+      </div>
       <div id="sideMaterials" class="side-panel">
         <div class="level-filter" id="levelFilter">
           <span class="lf-label">级别</span>

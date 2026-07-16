@@ -19,8 +19,10 @@ async function init(){
 function bindEvents(){
   $('#tabMaterials').onclick = () => switchTab('materials');
   $('#tabResources').onclick = () => switchTab('resources');
-  $('#menuBtn').onclick = () => { $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('hidden'); };
-  $('#overlay').onclick = () => { $('#sidebar').classList.remove('open'); $('#overlay').classList.add('hidden'); };
+  $('#menuBtn').onclick = () => { syncStabs(STATE.tab); $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('hidden'); };
+  $('#overlay').onclick = () => closeDrawer();
+  $('#drawerClose').onclick = () => closeDrawer();
+  document.querySelectorAll('.stab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
   // 级别筛选
   $('#levelFilter').querySelectorAll('.chip').forEach(c=>{
@@ -46,11 +48,19 @@ function switchTab(tab){
   STATE.tab = tab;
   $('#tabMaterials').classList.toggle('active', tab==='materials');
   $('#tabResources').classList.toggle('active', tab==='resources');
+  syncStabs(tab);
   $('#sideMaterials').classList.toggle('hidden', tab!=='materials');
   $('#sideResources').classList.toggle('hidden', tab!=='resources');
   if(tab==='materials'){ renderCatList(); }
   else { loadResources(); }
   if(location.hash==='#/home' || !location.hash) location.hash = tab==='materials' ? '#/home' : '#/resources';
+}
+function syncStabs(tab){
+  document.querySelectorAll('.stab').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+}
+function closeDrawer(){
+  $('#sidebar').classList.remove('open');
+  $('#overlay').classList.add('hidden');
 }
 
 /* ---------- 教材侧栏 ---------- */
@@ -71,6 +81,7 @@ function renderCatList(){
       const a = el('a', '', `${m.title}<span class="badge ${lv.c}">${lv.t}</span>`);
       a.href = '#/material/'+m.slug;
       a.dataset.slug = m.slug;
+      a.onclick = () => closeDrawer();
       body.appendChild(a);
     });
     wrap.appendChild(head); wrap.appendChild(body); box.appendChild(wrap);
@@ -106,7 +117,7 @@ async function loadResources(){
         ${r.word_count?`<span>${r.word_count} 字</span>`:''}
         ${fail?`<span class="st-fail">仅链接</span>`:''}
       </div>`;
-    item.onclick = ()=> location.hash = '#/resource/'+r.id;
+    item.onclick = ()=>{ closeDrawer(); location.hash = '#/resource/'+r.id; };
     box.appendChild(item);
   });
 }
@@ -134,6 +145,10 @@ async function showMaterial(slug){
       <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">← 上一篇</a>
       <a class="${m.next?'':'disabled'}" href="${m.next?'#/material/'+m.next:''}">下一篇 →</a>
     </div>`;
+  // 表格横向滚动容器（移动端友好）
+  $('#content').querySelectorAll('.doc-body table').forEach(t=>{
+    const w = el('div','table-wrap'); t.parentNode.insertBefore(w, t); w.appendChild(t);
+  });
   renderCatList();
 }
 async function showResource(id){
