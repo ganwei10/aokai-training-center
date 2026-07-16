@@ -175,15 +175,17 @@ function renderCatList(){
 /* ---------- 资源库 ---------- */
 let PLATS = [];
 async function loadResources(){
+  // 首次进入时获取全量资源类型（不受当前筛选影响），仅初始化一次
+  if(!PLATS.length){
+    try { const mt = await get('/resource-types'); PLATS = mt.types || []; }
+    catch(e){ PLATS = []; }
+    renderPlatFilter();
+  }
   const q = new URLSearchParams();
   if(STATE.cat) q.set('category', STATE.cat);
   if(STATE.plat) q.set('type', STATE.plat);
   if(STATE.level) q.set('level', STATE.level);
   const list = await get('/resources' + (q.toString()?'?'+q.toString():''));
-  const types = [...new Set(list.map(r=>r.type))].sort();
-  if(types.length!==PLATS.length || types.some((p,i)=>p!==PLATS[i])){
-    PLATS = types; renderPlatFilter();
-  }
   const box = $('#resList'); box.innerHTML='';
   if(!list.length){ box.appendChild(el('div','placeholder','该筛选下暂无资源')); return; }
   list.forEach(r=>{
@@ -207,8 +209,12 @@ function renderPlatFilter(){
   PLATS.forEach(p=>{
     const c = el('button','chip', p); c.dataset.plat=p;
     if(STATE.plat===p) c.classList.add('active');
-    c.onclick = ()=>{ STATE.plat=p;
-      fg.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); loadResources(); };
+    // 点击：已选中则取消筛选（显示全部），否则选中该类型；其它类型保持可见、可重新点选
+    c.onclick = ()=>{
+      STATE.plat = (STATE.plat===p) ? null : p;
+      fg.querySelectorAll('.chip[data-plat]').forEach(x=>x.classList.toggle('active', x.dataset.plat===STATE.plat));
+      loadResources();
+    };
     fg.appendChild(c);
   });
 }

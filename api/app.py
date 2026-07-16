@@ -109,6 +109,15 @@ def resources(category: str = None, platform: str = None, type: str = None, stat
     return rows
 
 
+@app.get('/api/resource-types')
+def resource_types():
+    conn = db()
+    rows = [x[0] for x in conn.execute(
+        "SELECT DISTINCT type FROM resources WHERE type IS NOT NULL AND type != '' ORDER BY type").fetchall()]
+    conn.close()
+    return {'types': rows}
+
+
 @app.get('/api/resources/{rid}')
 def resource(rid: str):
     conn = db()
