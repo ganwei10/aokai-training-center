@@ -4,7 +4,9 @@
     "url": "https://www.bilibili.com/video/BV1nhyEY6EHh/",
     "platform": "Bilibili",
     "category": "通用",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "面向新人与售后人员，演示食品真空包装机基础操作步骤与注意事项，快速建立设备使用认知。"
   },
   {
@@ -12,7 +14,9 @@
     "url": "https://www.bilibili.com/video/BV1BK411X7zM/",
     "platform": "Bilibili",
     "category": "通用",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "售前/通用入门，讲解灌肠机基本结构与工作原理，帮助新人理解核心设备。"
   },
   {
@@ -20,7 +24,9 @@
     "url": "https://www.bilibili.com/video/BV1BP4y1U7mi/",
     "platform": "Bilibili",
     "category": "通用",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "食品机械通识基础课，系统讲解各类食品加工设备，适合全员建立设备知识体系。"
   },
   {
@@ -28,7 +34,9 @@
     "url": "https://www.bilibili.com/video/BV1aN4y137dG/",
     "platform": "Bilibili",
     "category": "通用",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "行业入门，帮助销售/售前了解制造业与食品加工产业全貌，建立行业大局观。"
   },
   {
@@ -36,7 +44,9 @@
     "url": "https://www.youtube.com/watch?v=LSrLHCz-nsY",
     "platform": "YouTube",
     "category": "通用",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "灌肠机实操入门，演示手工/半自动灌肠与分段打结，直观理解灌肠工艺流程。"
   },
   {
@@ -44,7 +54,9 @@
     "url": "https://www.youtube.com/watch?v=2Pdeh_Vg4kc",
     "platform": "YouTube",
     "category": "售前工程师",
-    "levels": ["初级"],
+    "levels": [
+      "初级"
+    ],
     "note": "肉类真空包装产线演示，帮助售前理解真空包装在肉类加工中的真实应用场景。"
   },
   {
@@ -52,7 +64,9 @@
     "url": "https://www.bilibili.com/video/BV13e411U7Sh/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售后工程师学习给袋式真空包装机的调试、操作与参数设置，提升现场交付能力。"
   },
   {
@@ -60,7 +74,9 @@
     "url": "https://www.bilibili.com/video/BV1YM4y1o7Me/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售后/售前掌握真空包装机安装、调试与故障排查，是设备交付必备技能。"
   },
   {
@@ -68,7 +84,9 @@
     "url": "https://www.bilibili.com/video/BV1z34y1G7kE/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售后工程师通过PLC状态指示灯快速定位故障，提升现场维修与排障效率。"
   },
   {
@@ -76,7 +94,9 @@
     "url": "https://www.bilibili.com/video/BV17M4m1Z76t/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售后工程师系统化掌握PLC现场故障排查思路与手段，适合中级维修进阶。"
   },
   {
@@ -84,7 +104,9 @@
     "url": "https://www.youtube.com/watch?v=RfyEEAeiX-Q",
     "platform": "YouTube",
     "category": "售前工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售前工程师了解灌肠机整线组成与工业级配置方案，用于方案讲解与客户演示。"
   },
   {
@@ -92,7 +114,9 @@
     "url": "https://www.bilibili.com/video/BV1f3411C7Nx/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["中级"],
+    "levels": [
+      "中级"
+    ],
     "note": "售后/售前理解码垛机器人结构与工作原理，支撑整线末端自动化环节。"
   },
   {
@@ -100,7 +124,9 @@
     "url": "https://www.youtube.com/watch?v=HgTz3pTyRoA",
     "platform": "YouTube",
     "category": "售后工程师",
-    "levels": ["高阶"],
+    "levels": [
+      "高阶"
+    ],
     "note": "高阶售后学习食品饮料行业预测性维护方法论，从被动维修走向主动维护。"
   },
   {
@@ -108,7 +134,9 @@
     "url": "https://www.youtube.com/watch?v=tEZhoKSmyvM",
     "platform": "YouTube",
     "category": "售前工程师",
-    "levels": ["高阶"],
+    "levels": [
+      "高阶"
+    ],
     "note": "售前/高阶理解数字化工厂、数字孪生与预测性维护整体方案，支撑SCADA/MES售前。"
   },
   {
@@ -116,7 +144,9 @@
     "url": "https://www.bilibili.com/video/BV1gb421B7om/",
     "platform": "Bilibili",
     "category": "售后工程师",
-    "levels": ["高阶"],
+    "levels": [
+      "高阶"
+    ],
     "note": "高阶售后深入S7-1500控制系统故障诊断与定位，应对复杂电气故障。"
   },
   {
@@ -124,7 +154,9 @@
     "url": "https://www.youtube.com/watch?v=4qfuiHb5kN0",
     "platform": "YouTube",
     "category": "售前工程师",
-    "levels": ["高阶"],
+    "levels": [
+      "高阶"
+    ],
     "note": "售前/高阶观摩完整肉类自动化整线方案，理解灌肠到包装的全流程设计。"
   },
   {
@@ -132,7 +164,9 @@
     "url": "https://www.bilibili.com/video/BV17L4y1772X/",
     "platform": "Bilibili",
     "category": "销售",
-    "levels": ["高阶"],
+    "levels": [
+      "高阶"
+    ],
     "note": "销售人员学习顾问式销售、激发客户需求的实战方法，提升大客户成交能力。"
   },
   {
@@ -140,7 +174,60 @@
     "url": "https://www.youtube.com/watch?v=aFn2MM0rmQc",
     "platform": "YouTube",
     "category": "售前工程师",
-    "levels": ["中级", "高阶"],
+    "levels": [
+      "中级",
+      "高阶"
+    ],
     "note": "售前工程师观看全自动食品工厂整线，理解整厂自动化布局与方案设计思路。"
+  },
+  {
+    "title": "汇川PLC零基础入门讲解（含变频器/伺服基础）",
+    "url": "https://www.bilibili.com/video/BV1AAJGzBE6j/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": [
+      "初级"
+    ],
+    "note": "汇川PLC编程零基础入门合集：涵盖PLC基础、变频器接线与控制、H5U与伺服EtherCAT总线、轴控等，是自动化设备（灌装/包装/码垛线）电气基础首选学习资料。"
+  },
+  {
+    "title": "汇川PLC与汇川伺服设置教程（H3U+伺服配线/参数）",
+    "url": "https://www.bilibili.com/video/BV1mL4y1n743/",
+    "platform": "Bilibili",
+    "category": "售后",
+    "levels": [
+      "中级"
+    ],
+    "note": "汇川H3U系列PLC与伺服系统实操：伺服型号说明、配线、参数设定、轴控程序设计，面向售后装机调试与故障排查。"
+  },
+  {
+    "title": "汇川H5U小型PLC入门到精通（模拟量/PID/运动控制）",
+    "url": "https://www.bilibili.com/video/BV1GE421F7vH/",
+    "platform": "Bilibili",
+    "category": "售后",
+    "levels": [
+      "中级"
+    ],
+    "note": "汇川H5U小型PLC从选型、接线到模拟量采集、PID温控、运动控制（步进/伺服定位）、变频器控制、EtherCAT总线系统讲解，覆盖肉类加工线常用控制场景。"
+  },
+  {
+    "title": "汇川技术·产品竞争力中心宣传片《未来，由你定义》",
+    "url": "https://www.bilibili.com/video/BV1uG4y1f77Y/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": [
+      "初级"
+    ],
+    "note": "汇川技术官方企业宣传片，介绍公司定位、产品体系（变频器/伺服/PLC/机器人/数字化）与技术实力，适合售前建立客户认知。"
+  },
+  {
+    "title": "汇川技术发布全新一代SCARA工业机器人整机方案",
+    "url": "https://v.qq.com/x/page/p0397qxj45y.html",
+    "platform": "Tencent",
+    "category": "通用",
+    "levels": [
+      "初级"
+    ],
+    "note": "汇川技术SCARA工业机器人产品发布视频：展示高速SCARA机器人在精密上下料、装配、搬运等场景的应用，体现汇川在控制层/驱动层/执行层的整体自动化能力。"
   }
 ]

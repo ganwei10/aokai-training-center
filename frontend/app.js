@@ -18,7 +18,7 @@ const I18N = {
     note_label:'教材备注：',
     home_title:'欢迎来到奥楷培训学习中心',
     home_intro:'肉类食品加工数字化设备（灌装/扎线/扭结、包装、码垛）产品与技术培训平台。所有外部链接内容已下载归档，可离线学习。',
-    home_res_desc:'33 篇全网产品与技术培训资料 + 18 个培训视频，已归档可离线学习',
+    home_res_desc:'33 篇全网产品与技术培训资料 + 23 个培训视频，已归档可离线学习',
     home_comp_desc:'奥楷官方原始文档与国家标准合集，可下载 / 在线阅读',
     prev:'← 上一篇', next:'下一篇 →',
     placeholder_res:'从左侧选择资源查看详情',
@@ -38,7 +38,7 @@ const I18N = {
     note_label:'Note: ',
     home_title:'Welcome to Aokai Training Center',
     home_intro:'A training platform for meat-processing digitalization equipment (filling / linking / twisting, packaging, palletizing) — products & technology. All external links are downloaded and archived for offline learning.',
-    home_res_desc:'33 web training resources + 18 training videos, archived for offline learning',
+    home_res_desc:'33 web training resources + 23 training videos, archived for offline learning',
     home_comp_desc:'Aokai official documents & national standards — download / read online',
     prev:'← Prev', next:'Next →',
     placeholder_res:'Select a resource from the left',
@@ -80,6 +80,8 @@ function bindEvents(){
   $('#menuBtn').onclick = () => { syncStabs(STATE.tab); $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('hidden'); };
   $('#overlay').onclick = () => closeDrawer();
   $('#drawerClose').onclick = () => closeDrawer();
+  $('#pdfModalClose').onclick = () => closePdfReader();
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('#pdfModal').classList.contains('hidden')) closePdfReader(); });
   $('#langBtn').onclick = () => setLang(STATE.lang==='zh' ? 'en' : 'zh');
   document.querySelectorAll('.stab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
@@ -221,7 +223,7 @@ function renderCompanySidebar(data){
   (data.docs||[]).forEach(d=>{
     const item = el('div','res-item');
     item.innerHTML = `<div class="rt">${esc(d.title)}</div><div class="rmeta"><span class="pf">${d.kind==='file'?'PDF':'简介'}</span></div>`;
-    item.onclick = ()=>{ closeDrawer(); if(d.kind==='file'){ window.open(d.asset,'_blank'); } else { location.hash='#/company'; } };
+    item.onclick = ()=>{ closeDrawer(); if(d.kind==='file'){ openPdfReader(d.asset, d.title); } else { location.hash='#/company'; } };
     dl.appendChild(item);
   });
   const sl = $('#compStdList'); sl.innerHTML='';
@@ -243,7 +245,7 @@ async function showCompany(){
       html += `<div class="file-card">
         <div class="fc-title">${esc(d.title)}</div>
         <div class="fc-actions">
-          <a class="ext-link sm" href="${esc(d.asset)}" target="_blank" rel="noopener">${t('std_view')} ↗</a>
+          <button class="fc-btn read" data-read="${esc(d.asset)}" data-title="${esc(d.title)}">${t('std_view')} ↗</button>
           <a class="ext-link sm ghost" href="${esc(d.asset)}" download>${t('std_download')} ↓</a>
         </div></div>`;
     });
@@ -261,6 +263,10 @@ async function showCompany(){
   }
   $('#content').innerHTML = html;
   wrapTables();
+  // 公司文档「在线阅读」按钮 -> PDF 弹窗
+  $('#content').querySelectorAll('.fc-btn.read').forEach(b=>{
+    b.onclick = ()=> openPdfReader(b.dataset.read, b.dataset.title);
+  });
 }
 
 /* ---------- 内容渲染 ---------- */
@@ -331,12 +337,29 @@ function wrapTables(){
     const w = el('div','table-wrap'); tb.parentNode.insertBefore(w, tb); w.appendChild(tb);
   });
 }
+// PDF 站内在线阅读弹窗：原生 PDF 渲染（含工具栏/翻页），无需外部依赖
+function openPdfReader(asset, title){
+  const modal = $('#pdfModal');
+  $('#pdfModalTitle').textContent = title || 'PDF 阅读';
+  const dl = $('#pdfModalDownload'); dl.href = asset;
+  $('#pdfModalFrame').src = asset + '#toolbar=1&navpanes=0&view=FitH&pagemode=none';
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closePdfReader(){
+  const modal = $('#pdfModal');
+  modal.classList.add('hidden');
+  $('#pdfModalFrame').src = 'about:blank';
+  document.body.style.overflow = '';
+}
 // 视频链接 -> 可嵌入播放器
 function toEmbed(url){
   let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
   if(m) return 'https://www.youtube.com/embed/'+m[1];
   m = url.match(/bilibili\.com\/video\/(BV[\w]+)/);
   if(m) return 'https://player.bilibili.com/player.html?bvid='+m[1]+'&autoplay=0&high_quality=1';
+  m = url.match(/v\.qq\.com\/(?:x\/page|x\/cover)?\/([\w]+)\.html/);
+  if(m) return 'https://v.qq.com/txp/iframe/player.html?vid='+m[1]+'&autoplay=0';
   return url;
 }
 // 去广告/噪声：丢弃手机号、报名/咨询等样板行，折叠连续重复行

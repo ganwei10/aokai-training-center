@@ -192,3 +192,22 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,s
   .res-detail h1{font-size:19px}
   .ext-link{display:block;text-align:center}
 }
+
+/* PDF 在线阅读弹窗 */
+.pdf-modal{position:fixed;inset:0;z-index:80;background:#fff;display:flex;flex-direction:column}
+.pdf-modal-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:linear-gradient(90deg,var(--blue),var(--blue2));color:#fff;flex:0 0 auto}
+.pdf-modal-title{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+.pdf-modal-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.pdf-modal-actions .ext-link{color:#fff;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);margin:0}
+.pdf-modal-actions .ext-link:hover{background:rgba(255,255,255,.28)}
+.pdf-modal-close{background:rgba(255,255,255,.16);border:0;color:#fff;font-size:22px;line-height:1;width:34px;height:34px;border-radius:50%;cursor:pointer}
+.pdf-modal-close:hover{background:rgba(255,255,255,.3)}
+.pdf-modal-frame{flex:1 1 auto;width:100%;border:0;background:#525659}
+
+/* 文件卡片上的在线阅读按钮 */
+.fc-btn{display:inline-block;padding:6px 14px;border-radius:16px;cursor:pointer;font-size:13px;text-decoration:none;border:0}
+.fc-btn.read{background:var(--blue);color:#fff}
+.fc-btn.read:hover{background:var(--blue2)}
+.file-card .fc-title{font-weight:700;margin-bottom:10px;color:var(--txt)}
+.file-card .fc-actions{display:flex;gap:10px;flex-wrap:wrap}
+

@@ -111,7 +111,7 @@ def load_resources():
             res.append({
                 'id': 'vid_' + hashlib.md5(v['url'].encode('utf-8')).hexdigest()[:10],
                 'url': v['url'],
-                'domain': 'youtube.com' if 'youtube' in v['url'] else ('bilibili.com' if 'bilibili' in v['url'] else ''),
+                'domain': 'youtube.com' if 'youtube' in v['url'] else ('bilibili.com' if 'bilibili' in v['url'] else ('v.qq.com' if 'v.qq.com' in v['url'] else '')),
                 'platform': '培训视频',
                 'category': v.get('category', '通用'),
                 'categories': [v.get('category', '通用')],

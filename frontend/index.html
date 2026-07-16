@@ -90,6 +90,19 @@
   </div>
 
   <div id="overlay" class="overlay hidden"></div>
+
+  <!-- PDF 在线阅读弹窗 -->
+  <div id="pdfModal" class="pdf-modal hidden" role="dialog" aria-modal="true">
+    <div class="pdf-modal-bar">
+      <span id="pdfModalTitle" class="pdf-modal-title"></span>
+      <div class="pdf-modal-actions">
+        <a id="pdfModalDownload" class="ext-link sm" href="#" download>下载 ↓</a>
+        <button id="pdfModalClose" class="pdf-modal-close" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <iframe id="pdfModalFrame" class="pdf-modal-frame" title="PDF 在线阅读"></iframe>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
