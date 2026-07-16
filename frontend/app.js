@@ -17,7 +17,7 @@ const I18N = {
     note_label:'教材备注：',
     home_title:'欢迎来到奥楷培训学习中心',
     home_intro:'肉类食品加工数字化设备（灌装/扎线/扭结、包装、码垛）产品与技术培训平台。所有外部链接内容已下载归档，可离线学习。',
-    home_res_desc:'从全网收集的 33 篇产品与技术培训资料，已下载正文',
+    home_res_desc:'33 篇全网产品与技术培训资料 + 18 个培训视频，已归档可离线学习',
     prev:'← 上一篇', next:'下一篇 →',
     placeholder_res:'从左侧选择资源查看详情',
     loading:'加载中…', notfound:'未找到该教材', notfound_res:'未找到该资源',
@@ -34,7 +34,7 @@ const I18N = {
     note_label:'Note: ',
     home_title:'Welcome to Aokai Training Center',
     home_intro:'A training platform for meat-processing digitalization equipment (filling / linking / twisting, packaging, palletizing) — products & technology. All external links are downloaded and archived for offline learning.',
-    home_res_desc:'33 product & technology training resources collected from the web, with full text downloaded',
+    home_res_desc:'33 web training resources + 18 training videos, archived for offline learning',
     prev:'← Prev', next:'Next →',
     placeholder_res:'Select a resource from the left',
     loading:'Loading…', notfound:'Material not found', notfound_res:'Resource not found',
@@ -76,12 +76,9 @@ function bindEvents(){
   $('#langBtn').onclick = () => setLang(STATE.lang==='zh' ? 'en' : 'zh');
   document.querySelectorAll('.stab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
-  // 级别筛选
-  $('#levelFilter').querySelectorAll('.chip').forEach(c=>{
-    c.onclick = () => { STATE.level=c.dataset.level;
-      $('#levelFilter').querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-      c.classList.add('active'); renderCatList(); };
-  });
+  // 级别筛选（教材与资源库共用 STATE.level，两处筛选条同步）
+  $('#levelFilter').querySelectorAll('.chip').forEach(c=> c.onclick = () => setLevel(c.dataset.level));
+  $('#resLevelFilter').querySelectorAll('.chip').forEach(c=> c.onclick = () => setLevel(c.dataset.level));
   // 资源分类
   $('#resCatFilter').querySelectorAll('.chip').forEach(c=>{
     c.onclick = () => { STATE.cat=c.dataset.cat;
@@ -119,6 +116,14 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-ph]').forEach(e=>{ const k=e.getAttribute('data-i18n-ph'); if(I18N[STATE.lang] && I18N[STATE.lang][k]!=null) e.setAttribute('placeholder', I18N[STATE.lang][k]); });
   document.title = (I18N[STATE.lang] && I18N[STATE.lang].drawer_title) || 'Aokai Training Center';
   document.documentElement.lang = STATE.lang==='en' ? 'en' : 'zh-CN';
+}
+function setLevel(level){
+  STATE.level = level;
+  ['#levelFilter', '#resLevelFilter'].forEach(sel=>{
+    $(sel).querySelectorAll('.chip').forEach(x=> x.classList.toggle('active', x.dataset.level===level));
+  });
+  if(STATE.tab==='materials'){ renderCatList(); }
+  else { loadResources(); }
 }
 function setLang(lang){
   STATE.lang = lang;
@@ -163,6 +168,7 @@ async function loadResources(){
   const q = new URLSearchParams();
   if(STATE.cat) q.set('category', STATE.cat);
   if(STATE.plat) q.set('platform', STATE.plat);
+  if(STATE.level) q.set('level', STATE.level);
   const list = await get('/resources' + (q.toString()?'?'+q.toString():''));
   // 收集平台用于筛选
   const plats = [...new Set(list.map(r=>r.platform))].sort();
@@ -173,13 +179,13 @@ async function loadResources(){
   if(!list.length){ box.appendChild(el('div','placeholder','该筛选下暂无资源')); return; }
   list.forEach(r=>{
     const item = el('div','res-item');
-    const fail = r.status && r.status!=='ok';
-    item.innerHTML = `<div class="rt">${esc(r.title||r.domain)}</div>
+    const fail = r.status && r.status!=='ok' && !r.video_url;
+    item.innerHTML = `<div class="rt">${r.video_url?'🎬 ':''}${esc(r.title||r.domain)}</div>
       <div class="rmeta">
         <span class="pf">${esc(r.platform)}</span>
         <span>${esc(r.category)}</span>
         ${(r.levels||[]).map(l=>`<span class="badge ${LV[l]?LV[l].c:'gen'}">${lvLabel(l)}</span>`).join('')}
-        ${r.word_count?`<span>${r.word_count} 字</span>`:''}
+        ${r.video_url?`<span class="st-video">视频</span>`:(r.word_count?`<span>${r.word_count} 字</span>`:'')}
         ${fail?`<span class="st-fail">仅链接</span>`:''}
       </div>`;
     item.onclick = ()=>{ closeDrawer(); location.hash = '#/resource/'+r.id; };
@@ -210,31 +216,52 @@ async function showMaterial(slug){
       <a class="${m.prev?'':'disabled'}" href="${m.prev?'#/material/'+m.prev:''}">${m.prev?t('prev'):''}</a>
       <a class="${m.next?'':'disabled'}" href="${m.next?'#/material/'+m.next:''}">${m.next?t('next'):''}</a>
     </div>`;
-  // 表格横向滚动容器（移动端友好）
+  // 表格横向滚动容器（移动端友好）；正文外链新标签页打开，避免跳出 SPA
   $('#content').querySelectorAll('.doc-body table').forEach(t=>{
     const w = el('div','table-wrap'); t.parentNode.insertBefore(w, t); w.appendChild(t);
   });
+  $('#content').querySelectorAll('.doc-body a').forEach(a=>{ a.target='_blank'; a.rel='noopener'; a.classList.add('ext'); });
   renderCatList();
 }
 async function showResource(id){
   const r = await get('/resources/'+id);
-  const fail = r.status && r.status!=='ok';
+  const isVideo = !!r.video_url;
+  const mediaHtml = isVideo
+    ? `<div class="video-wrap"><iframe src="${toEmbed(r.video_url)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>`
+    : '';
+  const fail = r.status && r.status!=='ok' && !isVideo;
   const bodyHtml = fail
     ? `<div class="body">${STATE.lang==='en'
         ? 'The full text of this external resource was not captured. Please visit the original page via the button below.'
-        : '该外部资源暂未成功抓取正文，请通过下方按钮访问原页面查看完整内容。'}\n\n${t('note_label')}${esc(r.note||'')}</div>`
-    : `<div class="body">${esc(r.body|| (STATE.lang==='en'?'（No content）':'（无正文）'))}</div>`;
+        : '该外部资源暂未成功抓取正文，请通过下方按钮访问原页面查看完整内容。'}<br><br>${t('note_label')}${esc(r.note||'')}</div>`
+    : (isVideo ? '' : `<div class="body">${linkify(r.body || (STATE.lang==='en'?'（No content）':'（无正文）'))}</div>`);
   $('#content').innerHTML = `
     <div class="res-detail">
       <h1>${esc(r.title||r.domain)}</h1>
       <div class="meta">${STATE.lang==='en'?'Source':'来源'}：${esc(r.domain)} · ${STATE.lang==='en'?'Type':'类型'}：${esc(r.platform)} · ${STATE.lang==='en'?'For':'适用'}：${esc(r.category)}
-        ${(r.levels||[]).map(l=>'· '+lvLabel(l)).join('')} · ${STATE.lang==='en'?'Words':'字数'}：${r.word_count||0}</div>
+        ${(r.levels||[]).map(l=>'· '+lvLabel(l)).join('')}${isVideo?' · 🎬 '+(STATE.lang==='en'?'Training video':'培训视频'):''}</div>
       ${r.note?`<div class="note"><strong>${t('note_label')}</strong>${esc(r.note)}</div>`:''}
+      ${mediaHtml}
       ${bodyHtml}
-      <a class="ext-link" href="${esc(r.url)}" target="_blank" rel="noopener">访问原页面 ↗</a>
+      <a class="ext-link" href="${esc(r.url)}" target="_blank" rel="noopener">${isVideo
+        ? (STATE.lang==='en' ? 'Open on '+(r.domain||'source')+' ↗' : '在'+(r.domain||'原平台')+'打开 ↗')
+        : (STATE.lang==='en' ? 'Open original page ↗' : '访问原页面 ↗')}</a>
     </div>`;
-  // 高亮资源列表
-  $('#resList').querySelectorAll('.res-item').forEach((it,i)=>{});
+}
+// 将视频链接转为可嵌入播放器地址
+function toEmbed(url){
+  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  if(m) return 'https://www.youtube.com/embed/'+m[1];
+  m = url.match(/bilibili\.com\/video\/(BV[\w]+)/);
+  if(m) return 'https://player.bilibili.com/player.html?bvid='+m[1]+'&autoplay=0&high_quality=1';
+  return url;
+}
+// 资源正文：转义后把 URL 变为可点击链接（换行由 .body 的 white-space:pre-wrap 处理）
+function linkify(text){
+  if(!text) return '';
+  const e = esc(text);
+  return e.replace(/(https?:\/\/[^\s<>"'）)，。、；：]+)/g,
+    '<a href="$1" target="_blank" rel="noopener">$1</a>');
 }
 function showHome(){
   const groups = STATE.cats;

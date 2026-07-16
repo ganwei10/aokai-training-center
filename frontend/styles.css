@@ -97,6 +97,11 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,s
 .res-detail .meta{color:var(--muted);font-size:13px;margin:8px 0 16px}
 .res-detail .note{background:#f3fafb;border-left:4px solid var(--cyan);padding:12px 16px;border-radius:8px;margin-bottom:18px}
 .res-detail .body{white-space:pre-wrap;font-size:14.5px;line-height:1.9;background:#fff;padding:20px;border-radius:10px;border:1px solid var(--line)}
+.res-detail .body a{color:var(--cyan-d);text-decoration:underline;word-break:break-all}
+.res-detail .body a:hover{color:var(--blue2)}
+.video-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:6px 0 18px}
+.video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.res-item .st-video{background:#eaf3ff;color:#1a6ed8;padding:1px 7px;border-radius:8px}
 .ext-link{display:inline-block;margin-top:16px;background:var(--cyan);color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}
 .home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:22px}
 .home-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;cursor:pointer;transition:.15s}

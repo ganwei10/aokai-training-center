@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""将 13 篇教材 Markdown（中英双语）+ 下载的 resources.json 组装进 SQLite (learning.db)。
+"""将 13 篇教材 Markdown（中英双语）+ 下载的 resources.json + 培训视频合并进 SQLite (learning.db)。
 
 双语规则：
 - 每篇中文教材 `<x>.md` 可配套英文 `<x>_en.md`，二者共享同一 slug，以 lang 区分。
 - materials 表以 (slug, lang) 为唯一键；categories 表增加 name_en / blurb_en。
 """
-import os, json, sqlite3, re, glob
+import os, json, sqlite3, re, glob, hashlib
 import markdown as md
 
 ROOT = '/Users/weigan/WorkBuddy/2026-07-15-13-48-58'
@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'data')
 DB = os.path.join(DATA, 'learning.db')
 RES = os.path.join(DATA, 'resources.json')
+VID = os.path.join(DATA, 'videos_candidates.json')
 os.makedirs(DATA, exist_ok=True)
 
 # (key, 中文名, 英文名, 中文简介, 英文简介, 排序)
@@ -65,7 +66,7 @@ def main():
         UNIQUE(slug, lang));
     CREATE TABLE resources (id TEXT PRIMARY KEY, url TEXT, domain TEXT, platform TEXT, category TEXT,
         categories_json TEXT, levels_json TEXT, note TEXT, title TEXT, body TEXT, word_count INTEGER,
-        status TEXT, fetched_at TEXT);
+        status TEXT, fetched_at TEXT, video_url TEXT);
     ''')
     for k, name, en, bz, be, sort in GROUPS:
         c.execute('INSERT INTO categories (key,name,name_en,blurb,blurb_en,sort) VALUES (?,?,?,?,?,?)',
@@ -115,16 +116,36 @@ def main():
         'VALUES (?,?,?,?,?,?,?,?,?,?)', mats)
 
     # 资源
+    res = []
     if os.path.exists(RES):
         res = json.load(open(RES, encoding='utf-8'))
-        for r in res:
-            c.execute('INSERT OR REPLACE INTO resources (id,url,domain,platform,category,categories_json,'
-                      'levels_json,note,title,body,word_count,status,fetched_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                      (r['id'], r['url'], r['domain'], r['platform'], r['category'],
-                       json.dumps(r.get('categories', []), ensure_ascii=False),
-                       json.dumps(r.get('levels', []), ensure_ascii=False),
-                       r.get('note', ''), r.get('title', ''), r.get('body', ''),
-                       r.get('word_count', 0), r.get('status', ''), ''))
+    # 培训视频（合并进资源库，platform='培训视频'，video_url 用于前端嵌入播放器）
+    if os.path.exists(VID):
+        for v in json.load(open(VID, encoding='utf-8')):
+            cat = v.get('category', '通用')
+            res.append({
+                'id': 'vid_' + hashlib.md5(v['url'].encode('utf-8')).hexdigest()[:10],
+                'url': v['url'],
+                'domain': 'youtube.com' if 'youtube' in v['url'] else ('bilibili.com' if 'bilibili' in v['url'] else ''),
+                'platform': '培训视频',
+                'category': cat,
+                'categories': [cat],
+                'levels': v.get('levels', []),
+                'note': v.get('note', ''),
+                'title': v.get('title', v['url']),
+                'body': '',
+                'word_count': 0,
+                'status': 'video',
+                'video_url': v['url'],
+            })
+    for r in res:
+        c.execute('INSERT OR REPLACE INTO resources (id,url,domain,platform,category,categories_json,'
+                  'levels_json,note,title,body,word_count,status,fetched_at,video_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                  (r['id'], r['url'], r['domain'], r['platform'], r['category'],
+                   json.dumps(r.get('categories', []), ensure_ascii=False),
+                   json.dumps(r.get('levels', []), ensure_ascii=False),
+                   r.get('note', ''), r.get('title', ''), r.get('body', ''),
+                   r.get('word_count', 0), r.get('status', ''), '', r.get('video_url', '')))
 
     conn.commit()
     n_mat = c.execute('SELECT COUNT(*) FROM materials').fetchone()[0]
@@ -132,8 +153,9 @@ def main():
     n_en = c.execute("SELECT COUNT(*) FROM materials WHERE lang='en'").fetchone()[0]
     n_res = c.execute('SELECT COUNT(*) FROM resources').fetchone()[0]
     n_ok = c.execute("SELECT COUNT(*) FROM resources WHERE status='ok'").fetchone()[0]
+    n_vid = c.execute("SELECT COUNT(*) FROM resources WHERE status='video'").fetchone()[0]
     print(f'DB built: {DB}')
-    print(f'  materials={n_mat} (zh={n_zh}, en={n_en}), resources={n_res} (downloaded ok={n_ok})')
+    print(f'  materials={n_mat} (zh={n_zh}, en={n_en}), resources={n_res} (text ok={n_ok}, videos={n_vid})')
     conn.close()
 
 

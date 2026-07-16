@@ -82,10 +82,10 @@ def material(slug: str, lang: str = 'zh'):
 
 
 @app.get('/api/resources')
-def resources(category: str = None, platform: str = None, status: str = None, q: str = None):
+def resources(category: str = None, platform: str = None, status: str = None, level: str = None, q: str = None):
     conn = db()
     sql = ('SELECT id,url,domain,platform,category,categories_json,levels_json,note,title,'
-           'word_count,status FROM resources WHERE 1=1')
+           'word_count,status,video_url FROM resources WHERE 1=1')
     args = []
     if category:
         sql += ' AND category=?'; args.append(category)
@@ -93,6 +93,8 @@ def resources(category: str = None, platform: str = None, status: str = None, q:
         sql += ' AND platform=?'; args.append(platform)
     if status:
         sql += ' AND status=?'; args.append(status)
+    if level:
+        sql += ' AND levels_json LIKE ?'; args.append(f'%{level}%')
     if q:
         sql += ' AND (title LIKE ? OR body LIKE ? OR note LIKE ?)'
         args += [f'%{q}%', f'%{q}%', f'%{q}%']

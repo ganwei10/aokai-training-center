@@ -1,0 +1,146 @@
+[
+  {
+    "title": "如何正确使用真空包装机？",
+    "url": "https://www.bilibili.com/video/BV1nhyEY6EHh/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": ["初级"],
+    "note": "面向新人与售后人员，演示食品真空包装机基础操作步骤与注意事项，快速建立设备使用认知。"
+  },
+  {
+    "title": "灌肠机的工作原理是什么？",
+    "url": "https://www.bilibili.com/video/BV1BK411X7zM/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": ["初级"],
+    "note": "售前/通用入门，讲解灌肠机基本结构与工作原理，帮助新人理解核心设备。"
+  },
+  {
+    "title": "食品加工机械与设备（江苏大学 70讲）",
+    "url": "https://www.bilibili.com/video/BV1BP4y1U7mi/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": ["初级"],
+    "note": "食品机械通识基础课，系统讲解各类食品加工设备，适合全员建立设备知识体系。"
+  },
+  {
+    "title": "制造业行业基础认知（含食品加工）",
+    "url": "https://www.bilibili.com/video/BV1aN4y137dG/",
+    "platform": "Bilibili",
+    "category": "通用",
+    "levels": ["初级"],
+    "note": "行业入门，帮助销售/售前了解制造业与食品加工产业全貌，建立行业大局观。"
+  },
+  {
+    "title": "Making Sausage - How to properly use the stuffer to make sausage links",
+    "url": "https://www.youtube.com/watch?v=LSrLHCz-nsY",
+    "platform": "YouTube",
+    "category": "通用",
+    "levels": ["初级"],
+    "note": "灌肠机实操入门，演示手工/半自动灌肠与分段打结，直观理解灌肠工艺流程。"
+  },
+  {
+    "title": "Meat vacuum packaging with Flow-vac system",
+    "url": "https://www.youtube.com/watch?v=2Pdeh_Vg4kc",
+    "platform": "YouTube",
+    "category": "售前工程师",
+    "levels": ["初级"],
+    "note": "肉类真空包装产线演示，帮助售前理解真空包装在肉类加工中的真实应用场景。"
+  },
+  {
+    "title": "给袋式真空包装机调试使用教程",
+    "url": "https://www.bilibili.com/video/BV13e411U7Sh/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["中级"],
+    "note": "售后工程师学习给袋式真空包装机的调试、操作与参数设置，提升现场交付能力。"
+  },
+  {
+    "title": "真空包装机的安装与调试方法",
+    "url": "https://www.bilibili.com/video/BV1YM4y1o7Me/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["中级"],
+    "note": "售后/售前掌握真空包装机安装、调试与故障排查，是设备交付必备技能。"
+  },
+  {
+    "title": "西门子1200PLC通过状态指示灯诊断各种故障状态",
+    "url": "https://www.bilibili.com/video/BV1z34y1G7kE/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["中级"],
+    "note": "售后工程师通过PLC状态指示灯快速定位故障，提升现场维修与排障效率。"
+  },
+  {
+    "title": "PLC控制系统现场故障：处理思路、方法、经验、技巧、手段等分享",
+    "url": "https://www.bilibili.com/video/BV17M4m1Z76t/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["中级"],
+    "note": "售后工程师系统化掌握PLC现场故障排查思路与手段，适合中级维修进阶。"
+  },
+  {
+    "title": "Automatic Sausage Maker | Industrial Meat Stuffer | Food Processing Line",
+    "url": "https://www.youtube.com/watch?v=RfyEEAeiX-Q",
+    "platform": "YouTube",
+    "category": "售前工程师",
+    "levels": ["中级"],
+    "note": "售前工程师了解灌肠机整线组成与工业级配置方案，用于方案讲解与客户演示。"
+  },
+  {
+    "title": "工业码垛机器人的工作原理你知道吗？",
+    "url": "https://www.bilibili.com/video/BV1f3411C7Nx/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["中级"],
+    "note": "售后/售前理解码垛机器人结构与工作原理，支撑整线末端自动化环节。"
+  },
+  {
+    "title": "Deep dive - Predictive Maintenance in the Food and Beverage industry",
+    "url": "https://www.youtube.com/watch?v=HgTz3pTyRoA",
+    "platform": "YouTube",
+    "category": "售后工程师",
+    "levels": ["高阶"],
+    "note": "高阶售后学习食品饮料行业预测性维护方法论，从被动维修走向主动维护。"
+  },
+  {
+    "title": "Smart manufacturing in CPG: Digital transformation & predictive maintenance",
+    "url": "https://www.youtube.com/watch?v=tEZhoKSmyvM",
+    "platform": "YouTube",
+    "category": "售前工程师",
+    "levels": ["高阶"],
+    "note": "售前/高阶理解数字化工厂、数字孪生与预测性维护整体方案，支撑SCADA/MES售前。"
+  },
+  {
+    "title": "西门子S7-1500 PLC控制系统报故障了怎么查找故障？",
+    "url": "https://www.bilibili.com/video/BV1gb421B7om/",
+    "platform": "Bilibili",
+    "category": "售后工程师",
+    "levels": ["高阶"],
+    "note": "高阶售后深入S7-1500控制系统故障诊断与定位，应对复杂电气故障。"
+  },
+  {
+    "title": "Inside the Pork Hot Dog Factory | Fully Automated Meat Processing Line",
+    "url": "https://www.youtube.com/watch?v=4qfuiHb5kN0",
+    "platform": "YouTube",
+    "category": "售前工程师",
+    "levels": ["高阶"],
+    "note": "售前/高阶观摩完整肉类自动化整线方案，理解灌肠到包装的全流程设计。"
+  },
+  {
+    "title": "顾问式销售实战技巧：激发客户需求",
+    "url": "https://www.bilibili.com/video/BV17L4y1772X/",
+    "platform": "Bilibili",
+    "category": "销售",
+    "levels": ["高阶"],
+    "note": "销售人员学习顾问式销售、激发客户需求的实战方法，提升大客户成交能力。"
+  },
+  {
+    "title": "Modern Ready Meal Food Factory 2020 Fully Automated Production Line",
+    "url": "https://www.youtube.com/watch?v=aFn2MM0rmQc",
+    "platform": "YouTube",
+    "category": "售前工程师",
+    "levels": ["中级", "高阶"],
+    "note": "售前工程师观看全自动食品工厂整线，理解整厂自动化布局与方案设计思路。"
+  }
+]
